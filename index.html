@@ -1,0 +1,1276 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><style>
+/* Surcouche de suivi : reprend les jetons du blueprint v3 (--sheet, --surface, --ink, --line, --f-*). */
+:root{--sv-lo:var(--f-verify);--sv-mid:var(--f-intent);--sv-hi:var(--f-task)}
+.hero,#revision,#bilan,#mise-en-oeuvre,#sources{display:none!important}
+.sv-lo{--sv:var(--sv-lo)}.sv-mid{--sv:var(--sv-mid)}.sv-hi{--sv:var(--sv-hi)}
+
+/* Jauges dans les cellules SVG */
+.sv-gauge .sv-fill{fill:var(--sv);fill-opacity:.17;pointer-events:none}
+.sv-gauge .sv-bar{fill:var(--sv);fill-opacity:.95;pointer-events:none}
+.sv-pct{font:600 9px var(--font-mono);fill:var(--sv);pointer-events:none}
+.sv-cell{cursor:pointer}
+.sv-cell:focus{outline:none}
+.sv-cell:focus-visible .box,.sv-cell:hover .box{stroke:var(--tone);stroke-width:2}
+.sv-on .box{stroke:var(--accent)!important;stroke-width:2.6!important}
+
+/* Tableau de bord */
+#suivi{padding-top:28px}
+.sv-dash{display:grid;gap:18px}
+.sv-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sv-tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.sv-tile b{display:block;font:600 26px/1.1 var(--font-display);letter-spacing:.01em}
+.sv-tile span{font:12px/1.35 var(--font-body);color:var(--muted)}
+.sv-tile.sv-global{grid-column:span 2;--sv:var(--sv-mid)}
+.sv-tile.sv-global b{font-size:40px;color:var(--sv)}
+.sv-block{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:14px 16px 16px}
+.sv-block>h3{margin:0 0 10px;font:600 13px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.sv-piece,.sv-phase{display:grid;grid-template-columns:1fr auto;grid-template-areas:"n p" "t t";align-items:center;gap:4px 10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);font:13px var(--font-body);text-align:left}
+.sv-piece{cursor:pointer}
+.sv-piece:hover,.sv-piece:focus-visible{border-color:var(--sv);outline:none}
+.sv-pn{grid-area:n;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-piece b,.sv-phase b{grid-area:p;font:600 12px var(--font-mono);color:var(--sv)}
+.sv-track{grid-area:t;display:block;height:7px;border-radius:4px;background:var(--grid);overflow:hidden}
+.sv-track i{display:block;height:100%;background:var(--sv);border-radius:4px}
+.sv-phase{grid-template-areas:"n p" "t t" "s s"}
+.sv-phase small{grid-area:s;color:var(--muted);font-size:11.5px;line-height:1.35}
+.sv-feats{display:flex;flex-wrap:wrap;gap:6px}
+.sv-feat{font:12px var(--font-mono);padding:4px 8px;border-radius:7px;border:1px solid var(--line);background:var(--surface)}
+.sv-feat.ok{color:var(--f-task);border-color:var(--f-task)}
+.sv-feat.no{color:var(--muted)}
+.sv-legend{display:flex;flex-wrap:wrap;gap:14px;font:12px var(--font-body);color:var(--muted)}
+.sv-legend i{display:inline-block;width:26px;height:8px;border-radius:3px;margin-right:6px;vertical-align:middle;background:var(--sv)}
+.sv-stamp{font:11px var(--font-mono);color:var(--muted)}
+
+/* Journal de l'orchestrateur */
+.sv-jtitle{margin:0 0 8px;font:600 15px var(--font-body);color:var(--ink)}
+.sv-jcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.sv-jcols>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.sv-jcols h4,.sv-jsub{margin:4px 0 6px;font:600 12px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sv-jcols ul{margin:0;padding-left:18px;font:13px/1.45 var(--font-body);color:var(--ink)}
+.sv-jcols li{margin:3px 0}
+#journal details{margin-top:10px}
+#journal summary{cursor:pointer;font:600 13px var(--font-body);color:var(--ink)}
+.sv-jsub{margin-top:14px}
+.sv-pistes{margin:0;padding-left:22px;display:grid;gap:6px;font:13px/1.45 var(--font-body);color:var(--ink)}
+.sv-pistes li{padding-left:2px}
+.sv-pistes b{font-weight:600}
+.sv-ptag{margin-left:8px;font:11px var(--font-mono);color:var(--muted)}
+.sv-pistes small{display:block;color:var(--muted);font-size:12.5px}
+.sv-p-haute>b{color:var(--f-verify)}
+
+/* Vue locale */
+.sv-local{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);z-index:80;background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:-18px 0 40px rgba(0,0,0,.16);overflow:auto;padding:18px 20px 28px;
+  transform:translateX(100%);transition:transform .22s ease}
+.sv-local.open{transform:none}
+@media (prefers-reduced-motion: reduce){.sv-local{transition:none}}
+.sv-close{position:sticky;top:0;float:right}
+.sv-title{margin:6px 0 10px;font:600 22px/1.15 var(--font-display);letter-spacing:.01em}
+.sv-big{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}
+.sv-big .sv-track{height:12px}
+.sv-big b{font:600 22px var(--font-mono);color:var(--sv)}
+.sv-target{margin:6px 0 14px;color:var(--muted);font-size:12px}
+.sv-h{margin:16px 0 6px;font:600 12px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sv-h.done{color:var(--f-task)}.sv-h.todo{color:var(--f-intent)}
+.sv-local ul{margin:0;padding-left:20px;line-height:1.45;font-size:13.5px}
+.sv-done li::marker{content:"✓  ";color:var(--f-task)}
+.sv-todo li::marker{content:"○  ";color:var(--f-intent)}
+.sv-proof code{font:12px var(--font-mono);word-break:break-all}
+.sv-none{color:var(--muted);font-size:13px;margin:0}
+.sv-links{display:flex;flex-wrap:wrap;gap:6px}
+.sv-link{font:12px var(--font-mono);background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 8px;cursor:pointer}
+.sv-link:hover{border-color:var(--accent)}
+@media (max-width:640px){.sv-tile.sv-global{grid-column:span 1}.sv-grid{grid-template-columns:1fr}}
+.sv-note{font:11px var(--font-mono);color:var(--muted);font-weight:400}
+.sv-big .sv-track{grid-area:auto}
+
+/* Évolution */
+.sv-hist{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.sv-hpanel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.sv-hhead{display:flex;justify-content:space-between;align-items:baseline;font:500 13px var(--font-body);margin-bottom:4px}
+.sv-hhead b{font:600 20px var(--font-mono);color:var(--ink)}
+.sv-hsvg{display:block;width:100%;height:auto}
+.sv-hgrid{stroke:var(--grid);stroke-width:1}
+.sv-haxis{font:10px var(--font-mono);fill:var(--muted)}
+.sv-hline{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.sv-hdot{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.sv-hcross{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.sv-tip{position:absolute;top:34px;z-index:2;min-width:120px;background:var(--surface);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:6px 8px;font:12px var(--font-body);box-shadow:0 6px 18px rgba(0,0,0,.12);pointer-events:none}
+.sv-htable{margin-top:6px;font:12px var(--font-mono);color:var(--muted)}
+.sv-htable td{padding:1px 10px 1px 0}
+
+/* Grille de notation */
+.sv-shead{display:grid;grid-template-columns:auto 1fr;gap:8px 26px;align-items:center;margin-bottom:10px}
+.sv-sbig{display:flex;align-items:baseline;gap:10px;margin:2px 0 8px}
+.sv-sbig b{font:600 56px/1 var(--font-display);color:var(--sv)}
+.sv-sbig span{font:12px/1.35 var(--font-body);color:var(--muted)}
+.sv-sref{display:flex;flex-wrap:wrap;gap:8px 26px;margin:0}
+.sv-sref div{display:flex;flex-direction:column}
+.sv-sref dt{font:11px var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.sv-sref dd{margin:0;font:600 28px/1.1 var(--font-display);color:var(--ink)}
+.sv-sread{grid-column:1/-1;margin:0;font:13px/1.5 var(--font-body);color:var(--ink)}
+.sv-slegend{display:flex;flex-wrap:wrap;gap:6px 18px;font:12px var(--font-body);color:var(--muted);margin:6px 0 8px}
+.sv-slegend span{display:inline-flex;align-items:center;gap:7px}
+.sv-slegend i{display:inline-block;flex:none}
+.lg-a{width:20px;height:10px;border-radius:0 4px 4px 0;background:linear-gradient(90deg,var(--sv-lo),var(--sv-mid),var(--sv-hi))}
+.lg-v{width:3px;height:16px;border-radius:1px;background:var(--ink)}
+.lg-o{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);box-sizing:border-box}
+.lg-x{width:9px;height:9px;background:var(--muted);transform:rotate(45deg)}
+.sv-scorewrap{position:relative}
+.sv-srows{display:grid;gap:2px}
+.sv-srow,.sv-saxis{display:grid;grid-template-columns:minmax(120px,220px) 1fr 30px 34px;align-items:center;gap:12px;padding:5px 8px}
+.sv-srow{width:100%;background:none;border:1px solid transparent;border-radius:8px;color:var(--ink);font:13px var(--font-body);text-align:left;cursor:pointer}
+.sv-srow:hover,.sv-srow:focus-visible{border-color:var(--line);background:var(--surface);outline:none}
+.sv-srow b{font:600 15px var(--font-mono);text-align:right}
+.sv-srow small{font:12px var(--font-mono);color:var(--muted)}
+.sv-stot{cursor:default;border-top:1px solid var(--line);border-radius:0;margin-top:4px;padding-top:10px;font-weight:600}
+.sv-stot:hover{background:none;border-color:transparent;border-top-color:var(--line)}
+.sv-saxis{padding-top:0;padding-bottom:0;font:10px var(--font-mono);color:var(--muted)}
+.sv-saxis span{position:relative;height:12px}
+.sv-saxis em{position:absolute;transform:translateX(-50%);font-style:normal}
+.sv-bul{position:relative;display:block;height:12px;border-radius:3px;background:color-mix(in srgb,var(--line) 38%,var(--surface))}
+.sv-bul::before{content:"";position:absolute;inset:0;border-radius:3px;opacity:.55;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%)}
+.sv-bul i{position:absolute;top:50%}
+.sv-bul .sv-bul-a{left:0;top:0;height:100%;border-radius:0 4px 4px 0;background:var(--sv)}
+.sv-bul-v{width:3px;height:20px;margin-left:-1.5px;transform:translateY(-50%);border-radius:1px;background:var(--ink)}
+.sv-bul-o{width:11px;height:11px;margin-left:-5.5px;transform:translateY(-50%);border-radius:50%;border:2px solid var(--ink);background:var(--surface);box-sizing:border-box}
+.sv-bul-x{width:9px;height:9px;margin-left:-4.5px;transform:translateY(-50%) rotate(45deg);background:var(--muted);outline:2px solid var(--surface)}
+.sv-stip{position:absolute;z-index:3;min-width:220px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  padding:6px 9px;font:12px/1.5 var(--font-body);box-shadow:0 6px 18px rgba(0,0,0,.14);pointer-events:none}
+.sv-stable{margin-top:12px;font:13px var(--font-body)}
+.sv-stable summary{cursor:pointer;color:var(--accent);font:600 12px var(--font-mono)}
+.sv-scroll{overflow-x:auto}
+.sv-stable table{border-collapse:collapse;width:100%;min-width:680px;margin-top:8px}
+.sv-stable th,.sv-stable td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;color:var(--ink)}
+.sv-stable th{font:600 11px var(--font-mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.sv-stable .n{text-align:right;font-family:var(--font-mono);white-space:nowrap}
+.sv-stable tr.grp td{font-weight:600;background:var(--surface)}
+.sv-stable tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.sv-stable td.sub{padding-left:22px}
+.sv-stable td.w{color:var(--muted);font-size:12px}
+.sv-sub{border-top:1px solid var(--line);padding:10px 0 6px}
+.sv-subh{display:flex;align-items:baseline;gap:8px;font:600 14px var(--font-body)}
+.sv-subh span{flex:1}
+.sv-subh b{font:600 16px var(--font-mono)}
+.sv-subh small{font:12px var(--font-mono);color:var(--muted)}
+.sv-bul-sm{margin-top:7px}
+.sv-subv{margin:5px 0 0;font:11px var(--font-mono);color:var(--muted)}
+.sv-subw{margin:6px 0 0;font:12px/1.45 var(--font-body)}
+.sv-subt{margin:2px 0 0;font:13px/1.45 var(--font-body)}
+@media (max-width:560px){
+  .sv-shead{grid-template-columns:1fr}
+  .sv-srow,.sv-saxis{grid-template-columns:minmax(96px,130px) 1fr 26px 30px;gap:8px;padding-left:4px;padding-right:4px}
+}
+</style>
+</head><body>
+<title>Fonderie · plan de suivi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout : feuille de plan d'ingénieur. Bandeau collant, colonne 1240px, planches avec cartouche, plan global élargi, flux animés en SVG. */
+:root{
+  --bg:#ECF0F3;
+  --sheet:#F7F9FA;
+  --surface:#FFFFFF;
+  --ink:#0E2133;
+  --muted:#4E6276;
+  --line:#C5D0DA;
+  --grid:#E1E7EC;
+  --f-intent:#AD6A12;
+  --f-task:#0B8274;
+  --f-verify:#C9462F;
+  --f-context:#2B63C8;
+  --f-control:#5A6B7D;
+  --f-learn:#7142BA;
+  --accent:#2B63C8;
+  --c-us:#00897B;
+  --c-oss:#2B63C8;
+  --c-abs:#AD6A12;
+  --font-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-cond:"IBM Plex Sans Condensed","Arial Narrow","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#09141F;--sheet:#0D1B29;--surface:#122434;--ink:#E1EAF2;--muted:#93A7BA;--line:#26394C;--grid:#102131;
+    --f-intent:#EFAE3F;--f-task:#36C6B0;--f-verify:#FF7A62;--f-context:#6AA3FF;--f-control:#9DAFC0;--f-learn:#B18DF1;--accent:#6AA3FF;--c-us:#14A08A;--c-oss:#4F86E8;--c-abs:#C98420;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#09141F;--sheet:#0D1B29;--surface:#122434;--ink:#E1EAF2;--muted:#93A7BA;--line:#26394C;--grid:#102131;
+  --f-intent:#EFAE3F;--f-task:#36C6B0;--f-verify:#FF7A62;--f-context:#6AA3FF;--f-control:#9DAFC0;--f-learn:#B18DF1;--accent:#6AA3FF;--c-us:#14A08A;--c-oss:#4F86E8;--c-abs:#C98420;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background-color:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wide{max-width:1720px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.k{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+code{font-family:var(--font-mono);font-size:.88em;overflow-wrap:anywhere;background:color-mix(in srgb,var(--f-context) 8%,var(--surface));border:1px solid var(--line);border-radius:5px;padding:0 4px}
+
+/* Bandeau */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:16px;padding-block:10px}
+.brand{font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;color:var(--ink);text-decoration:none;line-height:1}
+.brand span{color:var(--f-intent)}
+.nav{display:flex;gap:2px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-family:var(--font-mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-decoration:none;padding:6px 9px;border-radius:6px;white-space:nowrap}
+.nav a:hover{color:var(--ink);background:var(--surface)}
+.btn{font:500 12px/1 var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn svg{width:12px;height:12px;fill:currentColor}
+
+/* Hero */
+.hero{padding-block:52px 24px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:40px;align-items:end}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap}
+.eyebrow b{color:var(--f-intent);font-weight:500}
+h1{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:clamp(2.6rem,6.4vw,5.2rem);line-height:.9;letter-spacing:.005em;margin:14px 0 20px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--f-task)}
+.lede{font-size:1.125rem;max-width:62ch;margin:0}
+.formula{border:1px solid var(--line);background:var(--sheet);border-radius:14px;padding:20px 22px;display:grid;gap:10px}
+.formula .eq{font-family:var(--font-display);font-weight:800;font-size:clamp(1.9rem,3.4vw,2.7rem);line-height:1;text-transform:uppercase;display:flex;flex-wrap:wrap;gap:.22em;align-items:baseline}
+.formula .eq .op{color:var(--muted);font-weight:600}
+.formula .eq .h{color:var(--f-task)}
+.formula p{margin:0;font-size:.95rem;color:var(--muted)}
+.parts{display:flex;flex-wrap:wrap;gap:6px}
+.parts span{font-family:var(--font-mono);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+
+/* Révision */
+.revbox{border:1px solid var(--line);background:var(--sheet);border-radius:16px;padding:18px 20px;display:grid;gap:12px}
+.revbox h2{font-size:clamp(1.6rem,3vw,2.1rem)}
+.revlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 28px}
+.revlist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;font-size:.95rem}
+.pill{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--pc) 50%,var(--line));color:var(--pc);background:color-mix(in srgb,var(--pc) 8%,var(--surface));white-space:nowrap}
+
+/* Sections */
+section{padding-block:36px}
+.sec-head{display:grid;gap:8px;margin-bottom:20px}
+h2{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:clamp(2.1rem,4.4vw,3.2rem);line-height:.95;margin:0;text-wrap:balance}
+.sec-head p{max-width:72ch;margin:0;color:var(--muted)}
+h3.sub{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:1.55rem;line-height:1;margin:38px 0 12px;letter-spacing:.01em}
+p.intro{max-width:76ch;margin:0 0 14px}
+
+/* Planche */
+.sheet{background:var(--sheet);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.sheet:fullscreen{overflow:auto;border-radius:0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg.dg{display:block;width:100%;height:auto}
+.bp-svg{min-width:780px}
+.plan-svg{min-width:1240px}
+.keys-svg{min-width:900px}
+.q-svg{min-width:900px}
+.pz-svg{min-width:860px}
+.hint{display:none;margin:0;padding:10px 14px 0;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.cartouche{display:flex;flex-wrap:wrap;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cartouche>div{padding:8px 14px;border-right:1px solid var(--line)}
+.cartouche>div:last-child{border-right:0;margin-left:auto}
+.cartouche b{color:var(--ink);font-weight:500}
+
+/* Légende */
+.legend{display:flex;flex-wrap:wrap;gap:6px 8px;padding:12px 14px;border-top:1px solid var(--line);align-items:center}
+.lg{display:inline-flex;align-items:center;gap:8px;font:500 13px/1.2 var(--font-cond);color:var(--ink);border:1px solid transparent;border-radius:999px;padding:5px 11px 5px 9px;background:none}
+button.lg{cursor:pointer;border-color:var(--line);background:var(--surface)}
+button.lg:hover{border-color:var(--fc)}
+button.lg[aria-pressed="true"]{border-color:var(--fc);box-shadow:inset 0 0 0 1px var(--fc);background:color-mix(in srgb,var(--fc) 10%,var(--surface))}
+.lg i{width:22px;height:0;border-top:2px solid var(--fc);position:relative;flex:none}
+.lg i::after{content:"";position:absolute;right:-2px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--fc)}
+.lg.dash i{border-top-style:dashed}
+
+/* Info bloc */
+.info{display:grid;gap:8px}
+.info-h{display:flex;align-items:center;gap:10px;font:600 1.12rem/1.2 var(--font-cond)}
+.sw{width:12px;height:12px;border-radius:3px;background:var(--fc);transform:rotate(45deg);flex:none}
+.info p{margin:0;max-width:78ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.03em;padding:3px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--fc,var(--muted)) 45%,var(--line));color:var(--ink);background:var(--surface)}
+.caption{padding:14px 16px 16px;border-top:1px solid var(--line);min-height:120px}
+
+/* Preuves */
+.evidence{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:22px}
+.ev{border-top:2px solid var(--ink);padding-top:10px;min-width:0}
+.ev .n{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums}
+.ev p{margin:6px 0 4px;font-size:.93rem}
+.ev small{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+
+/* Lois */
+.laws{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:26px}
+.law{background:var(--sheet);padding:18px 18px 20px;min-width:0;display:grid;gap:6px;align-content:start}
+.law h4{font:600 1.15rem/1.25 var(--font-cond);margin:0;display:flex;gap:10px;align-items:center}
+.law svg{width:24px;height:24px;flex:none}
+.law svg path,.ico path{fill:none;stroke:var(--fc);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.law p{margin:0;font-size:.95rem;color:var(--muted)}
+.callout{margin-top:16px;border:1px dashed var(--f-intent);border-radius:12px;padding:14px 18px;background:color-mix(in srgb,var(--f-intent) 7%,var(--sheet));display:flex;gap:14px;align-items:flex-start}
+.callout .ico{width:26px;height:26px;flex:none;--fc:var(--f-intent)}
+.callout p{margin:0}
+.callout b{font-family:var(--font-cond);font-weight:600}
+
+/* Fondements */
+.ladder{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--sheet)}
+.ladder li{display:grid;grid-template-columns:52px minmax(0,1fr) minmax(0,1.35fr);gap:8px 18px;padding:14px 18px;border-top:1px solid var(--line);align-items:baseline;background:color-mix(in srgb,var(--f-intent) var(--d),var(--sheet))}
+.ladder li:first-child{border-top:0}
+.ladder .r{font-family:var(--font-display);font-weight:800;font-size:1.9rem;line-height:1;color:var(--f-intent);font-variant-numeric:tabular-nums}
+.ladder .q{font:600 1.05rem/1.3 var(--font-cond)}
+.ladder .a{color:var(--ink);font-size:.97rem}
+.ladder li.top .a{font-weight:600}
+.axioms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px}
+.ax{border-top:2px solid var(--ink);padding-top:10px;display:grid;gap:6px;align-content:start;min-width:0}
+.ax .id{font-family:var(--font-display);font-weight:800;font-size:1.5rem;line-height:1;color:var(--f-context)}
+.ax p{margin:0;font-size:.95rem}
+.ax .then{font-size:.9rem;color:var(--muted);display:flex;gap:8px}
+.ax .then::before{content:"→";color:var(--f-task);font-weight:600}
+.loops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.loop{background:var(--sheet);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.loop .mini{padding:8px 6px 0}
+.loop .body{padding:10px 16px 16px;border-top:1px solid var(--line);display:grid;gap:6px}
+.loop h4{font:600 1.1rem/1.25 var(--font-cond);margin:0}
+.loop p{margin:0;font-size:.93rem}
+.loop .act{font-size:.9rem;color:var(--muted)}
+.loop .act b{color:var(--ink);font-family:var(--font-cond);font-weight:600}
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;counter-reset:ord}
+.ord{background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start;position:relative;min-width:0}
+.ord .o{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--f-verify)}
+.ord p{margin:0;font-size:.94rem}
+.ord .par{font-size:.88rem;color:var(--muted)}
+.ord .par b{color:var(--f-task);font-weight:600}
+.hz{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.hzc{border-top:2px solid var(--ink);padding-top:10px;display:grid;gap:6px;align-content:start;min-width:0}
+.hzc .y{font-family:var(--font-display);font-weight:800;font-size:2rem;line-height:1}
+.hzc p{margin:0;font-size:.94rem}
+.beliefs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.bel{border:1px solid var(--line);border-radius:12px;background:var(--sheet);padding:12px 16px;display:grid;gap:4px;min-width:0}
+.bel .x{font:600 1.02rem/1.3 var(--font-cond);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--f-verify) 70%,transparent);text-decoration-thickness:1.5px}
+.bel p{margin:0;font-size:.93rem;color:var(--muted)}
+.inv{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.inv li{display:flex;gap:12px;align-items:baseline;font-size:1rem}
+.inv li::before{content:"";width:9px;height:9px;flex:none;transform:rotate(45deg) translateY(-1px);background:var(--f-context);border-radius:2px}
+.verdict{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vd{background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start;min-width:0}
+.vd .k{color:var(--fc)}
+.vd p{margin:0;font-size:.95rem}
+.vd p.big{font:600 1.1rem/1.35 var(--font-cond);color:var(--ink)}
+.principle{margin-top:12px;border-radius:14px;padding:18px 22px;background:var(--ink);color:var(--bg);display:grid;gap:6px}
+.principle .k{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.principle p{margin:0;font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:clamp(1.4rem,2.8vw,2.1rem);line-height:1.05;text-wrap:balance}
+
+/* Bilan */
+.dotplot{background:var(--sheet);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;margin-top:22px}
+.dp-legend{display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:.92rem;align-items:center}
+.dp-legend span{display:inline-flex;align-items:center;gap:8px}
+.dp-legend svg{width:16px;height:16px;flex:none}
+svg.dp{display:block;width:100%;height:auto;min-width:640px;font-family:var(--font-cond)}
+.dp .row-bg{fill:transparent}
+.dp .row:hover .row-bg,.dp .row:focus .row-bg{fill:color-mix(in srgb,var(--ink) 5%,transparent)}
+.dp .row:focus{outline:none}
+.dp .row:focus-visible .row-bg{stroke:var(--accent);stroke-width:1.5}
+.dp .lab{font-weight:600;fill:var(--ink);font-size:13.5px}
+.dp .lab.tot{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.04em}
+.dp .grid{stroke:var(--line);stroke-width:1}
+.dp .sep{stroke:var(--ink);stroke-width:1}
+.dp .tick{font-family:var(--font-mono);font-size:10.5px;fill:var(--muted)}
+.dp .trk{stroke:color-mix(in srgb,var(--ink) 9%,transparent);stroke-width:1}
+.dp .gain{stroke:var(--c-us);stroke-width:2;fill:none}
+.dp .m-us{fill:var(--c-us);stroke:var(--sheet);stroke-width:2}
+.dp .m-r2{fill:var(--sheet);stroke:var(--c-us);stroke-width:2}
+.dp .m-oss{fill:var(--c-oss);stroke:var(--sheet);stroke-width:2}
+.dp .m-abs{fill:var(--c-abs);stroke:var(--sheet);stroke-width:2}
+.dp .val{font-family:var(--font-mono);font-size:12px;font-weight:500;fill:var(--ink);font-variant-numeric:tabular-nums}
+.dp-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:7px 10px;font:12px/1.5 var(--font-mono);white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));z-index:5}
+.tbl td.n{font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-weight:400}
+.tbl th.n{text-align:right}
+.tbl tr.cgrp td{background:color-mix(in srgb,var(--ink) 5%,var(--sheet));font-weight:600;border-bottom:1px solid var(--line)}
+.tbl tr.cgrp td.n{font-weight:600}
+.tbl tr.gtot td{border-top:1px solid var(--ink);font-family:var(--font-display);font-weight:800;font-size:1.05rem;letter-spacing:.03em}
+.tbl tr.gtot td.n{font-family:var(--font-mono);font-weight:600;font-size:13px;letter-spacing:0}
+.tbl td.sub{padding-left:28px;font-family:var(--font-body);font-weight:400}
+.guards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.guards li{border:1px solid var(--line);border-radius:12px;background:var(--sheet);padding:12px 16px;display:grid;gap:4px;font-size:.94rem;min-width:0}
+.guards b{font-family:var(--font-cond);font-weight:600;font-size:1.02rem}
+.guards .ax-ref{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+
+/* Chunks */
+.chunks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.stage{grid-column:1/-1;display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin-top:16px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.stage:first-child{margin-top:0}
+.stage b{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:1.5rem;letter-spacing:.02em;color:var(--fc)}
+.stage span{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chunk{background:var(--sheet);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.chunk .mini{border-bottom:1px solid var(--line);padding:6px 6px 2px}
+.chunk .body{padding:14px 18px 18px;display:grid;gap:10px;align-content:start}
+.chunk .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chunk .num{font-family:var(--font-display);font-weight:800;font-size:2.6rem;line-height:.8;color:var(--fc);font-variant-numeric:tabular-nums}
+.chunk h4{font:600 1.22rem/1.2 var(--font-cond);margin:0;text-wrap:balance;flex:1;min-width:12ch}
+.chunk p{margin:0;font-size:.95rem}
+.chunk ul{margin:0;padding-left:18px;font-size:.93rem}
+.chunk li{margin:3px 0}
+.chunk li::marker{color:var(--fc)}
+.piece{font-family:var(--font-mono);font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px}
+.piece b{color:var(--ink);font-weight:500}
+.signal{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--f-task) 9%,var(--sheet));border:1px solid color-mix(in srgb,var(--f-task) 25%,var(--line))}
+.signal .ico{width:18px;height:18px;flex:none;margin-top:2px;--fc:var(--f-task)}
+
+/* Plan */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.steps,.zoom{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--surface);font:500 12px/1 var(--font-mono);color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
+.dot:hover{border-color:var(--accent);color:var(--ink)}
+.dot[aria-current="step"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.plan-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--line)}
+.plan-panels>div{padding:16px 18px 18px;min-width:0;display:grid;gap:8px;align-content:start;min-height:150px}
+.plan-panels>div+div{border-left:1px solid var(--line)}
+.step-t{font:600 1.15rem/1.2 var(--font-cond);margin:0;display:flex;gap:10px;align-items:baseline}
+.step-t span{font-family:var(--font-display);font-weight:800;font-size:1.6rem;color:var(--f-intent)}
+#stepPanel p{margin:0;max-width:72ch}
+
+/* Tables */
+.tblwrap{overflow-x:auto;background:var(--sheet);border:1px solid var(--line);border-radius:14px}
+.tbl{width:100%;border-collapse:collapse;font-size:.94rem;min-width:620px}
+.tbl th{text-align:left;font-family:var(--font-mono);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--ink)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td:first-child{font-family:var(--font-cond);font-weight:600}
+.tbl td.nw{white-space:nowrap}
+.tbl td .muted,.tbl .muted{color:var(--muted)}
+.tbl td.mono{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+.mx{border-collapse:separate;border-spacing:0;font-size:13px;width:100%;min-width:1020px}
+.mx th,.mx td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:center}
+.mx thead th{font-family:var(--font-mono);font-size:10.5px;font-weight:400;color:var(--muted);vertical-align:bottom;line-height:1.3;padding-top:12px;border-bottom:1px solid var(--ink)}
+.mx thead th b{display:block;color:var(--ink);font-weight:500;font-size:11px}
+.mx tbody th{text-align:left;font-family:var(--font-cond);font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--sheet);z-index:1;padding-left:14px;padding-right:12px}
+.mx thead th:first-child{position:sticky;left:0;background:var(--sheet);z-index:2;text-align:left;padding-left:14px}
+.mx tbody tr:last-child td,.mx tbody tr:last-child th{border-bottom:0}
+.mx tr.grp th{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;background:color-mix(in srgb,var(--ink) 4%,var(--sheet))}
+.mx tr.grp td{background:color-mix(in srgb,var(--ink) 4%,var(--sheet))}
+.cap{display:inline-block;min-width:38px;padding:2px 6px;border-radius:6px;font-family:var(--font-mono);font-size:11px;line-height:1.45;border:1px solid transparent;color:var(--ink)}
+.cap.L{background:color-mix(in srgb,var(--f-context) 13%,var(--surface));border-color:color-mix(in srgb,var(--f-context) 38%,var(--line))}
+.cap.E{background:color-mix(in srgb,var(--f-task) 16%,var(--surface));border-color:color-mix(in srgb,var(--f-task) 45%,var(--line))}
+.cap.B{background:var(--surface);border:1px dashed var(--f-task)}
+.cap.Q{background:color-mix(in srgb,var(--f-verify) 13%,var(--surface));border-color:color-mix(in srgb,var(--f-verify) 45%,var(--line))}
+.cap.A{background:color-mix(in srgb,var(--f-learn) 13%,var(--surface));border-color:color-mix(in srgb,var(--f-learn) 45%,var(--line))}
+.cap.I{background:color-mix(in srgb,var(--f-control) 14%,var(--surface));border-color:color-mix(in srgb,var(--f-control) 45%,var(--line))}
+.cap.N{color:var(--muted);min-width:0}
+.caplegend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:.88rem;align-items:center}
+.caplegend span{display:inline-flex;gap:6px;align-items:center}
+.notes4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;margin-top:14px}
+.notes4 p{margin:0;font-size:.94rem;position:relative;padding-left:20px}
+.notes4 p::before{content:"";position:absolute;left:0;top:.6em;width:8px;height:8px;transform:rotate(45deg);background:var(--f-verify);border-radius:2px}
+.layers{list-style:none;margin:0;padding:0;display:grid;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--sheet)}
+.layers li{display:grid;grid-template-columns:150px minmax(0,1fr) 120px;gap:6px 18px;padding:12px 16px;border-top:1px solid var(--line);align-items:baseline}
+.layers li:first-child{border-top:0}
+.layers .ln{font:600 1rem/1.25 var(--font-cond);grid-column:1;grid-row:1}
+.layers li>p{grid-column:2;grid-row:1}
+.layers .strength{grid-column:3;grid-row:1}
+.layers p{margin:0;font-size:.94rem}
+.strength{font-family:var(--font-mono);font-size:11px;display:flex;gap:3px;align-items:center;justify-content:flex-end;color:var(--muted)}
+.strength i{width:10px;height:10px;border-radius:2px;background:var(--line);display:inline-block}
+.strength i.on{background:var(--f-task)}
+.v{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--pc) 50%,var(--line));color:var(--pc);background:color-mix(in srgb,var(--pc) 8%,var(--surface))}
+
+/* Mise en oeuvre */
+.anti{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ap{border:1px solid var(--line);border-radius:12px;background:var(--sheet);padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.ap .bad{font:600 1.05rem/1.25 var(--font-cond);display:flex;gap:10px;align-items:center}
+.ap .bad::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--f-verify);transform:rotate(45deg);flex:none}
+.ap .fix{font-size:.93rem;color:var(--muted);margin:0}
+.ap .fix b{color:var(--f-task);font-weight:600}
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.two>*{min-width:0}
+pre.tree,pre.code{margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.65;padding:16px 18px;overflow-x:auto;background:var(--sheet);border:1px solid var(--line);border-radius:14px;color:var(--ink);min-width:0}
+pre .c{color:var(--muted)}
+pre .a{color:var(--f-task)}
+pre .h{color:var(--f-intent)}
+pre .r{color:var(--f-verify)}
+.codehead{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin:0 0 6px;text-transform:uppercase;letter-spacing:.06em}
+.notes{display:grid;gap:10px;font-size:.95rem}
+.notes p{margin:0}
+.notes b{font-family:var(--font-cond);font-weight:600}
+.rules{margin:0;padding-left:34px;display:grid;gap:8px;font-size:.95rem;max-width:90ch}
+.rules li::marker{font-family:var(--font-mono);color:var(--f-intent);font-weight:500}
+.sources{margin:0;padding-left:34px;display:grid;gap:8px;font-size:.95rem;max-width:90ch}
+.sources li::marker{font-family:var(--font-mono);color:var(--muted)}
+.sources span{color:var(--muted)}
+footer{border-top:1px solid var(--line);margin-top:20px}
+footer .wrap{padding-block:22px 40px;font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+
+/* SVG diagrammes */
+svg.dg{font-family:var(--font-cond)}
+.dg .pn{fill:color-mix(in srgb,var(--tone) 6%,var(--sheet));stroke:color-mix(in srgb,var(--tone) 32%,var(--line));stroke-width:1}
+.dg .ph-n{font-family:var(--font-mono);font-size:12px;font-weight:500;fill:var(--tone)}
+.dg .ph-t{font-family:var(--font-display);font-weight:800;font-size:19px;letter-spacing:.05em;fill:var(--ink)}
+.dg .lh-t{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:.05em;fill:var(--ink)}
+.dg .lh-s{font-family:var(--font-mono);font-size:10.5px;fill:var(--muted)}
+.dg .fr{fill:none;stroke:color-mix(in srgb,var(--tone) 55%,var(--line));stroke-width:1.2;stroke-dasharray:6 5}
+.dg .fr-t{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:.06em;fill:var(--tone)}
+.dg .fr-t.sm{font-size:13px}
+.dg .fr-s{font-family:var(--font-mono);font-weight:400;font-size:11px;letter-spacing:0;fill:var(--muted)}
+.dg .bubble{fill:color-mix(in srgb,var(--tone) 5%,transparent);stroke:color-mix(in srgb,var(--tone) 50%,var(--line));stroke-dasharray:4 4}
+.dg .bubble-t{font-family:var(--font-mono);font-size:10.5px;fill:var(--tone)}
+.dg .ghost{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.dg .node{transition:opacity .25s}
+.dg .node.click{cursor:pointer}
+.dg .node:focus{outline:none}
+.dg .box{fill:var(--surface);stroke:var(--line);stroke-width:1;transition:stroke .2s,stroke-width .2s}
+.dg .gatebox{stroke:color-mix(in srgb,var(--tone) 55%,var(--line))}
+.dg .node.click:hover .box,.dg .node.sel .box{stroke:var(--tone);stroke-width:2.2}
+.dg .node:focus-visible .box{stroke:var(--accent);stroke-width:2.6}
+.dg .ic-bg{fill:color-mix(in srgb,var(--tone) 15%,var(--surface))}
+.dg .ic{fill:none;stroke:var(--tone);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.dg .t{font-weight:600;fill:var(--ink)}
+.dg .s{font-family:var(--font-cond);font-weight:500;fill:var(--muted)}
+.dg .badge{font-family:var(--font-mono);font-size:12px;font-weight:500;fill:var(--tone)}
+.dg .chip{fill:color-mix(in srgb,var(--tone) 7%,var(--surface));stroke:color-mix(in srgb,var(--tone) 30%,var(--line))}
+.dg .chip-t{font-family:var(--font-mono);fill:var(--ink)}
+.dg .lane{fill:color-mix(in srgb,var(--tone) 5%,var(--surface));stroke:color-mix(in srgb,var(--tone) 45%,var(--line));stroke-dasharray:4 3}
+.dg .rl-t{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:.05em;fill:var(--ink)}
+.dg .rl-sep{stroke:var(--line)}
+.dg .ri{fill:var(--tone)}
+.dg .ln{fill:none;stroke:var(--fc);stroke-width:1.6;opacity:.72;transition:opacity .25s,stroke-width .25s}
+.dg .dash .ln{stroke-dasharray:5 4}
+html.playing .dg .dash .ln{animation:dashmove 1s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-18}}
+.dg .ah{fill:var(--fc)}
+.dg .edge{transition:opacity .25s}
+.dg .elabel{font-family:var(--font-mono);font-size:10.5px;fill:var(--muted)}
+.dg .elabel.sign{font-size:14px;font-weight:500;fill:var(--fc)}
+.dg .lbg{fill:var(--sheet)}
+.dg .pt{transition:opacity .25s}
+.dg .pt .halo{fill:var(--fc);opacity:.22}
+.dg .pt .core{fill:var(--fc)}
+.dg.focusing .edge:not(.on),.dg.focusing .edge-lbl:not(.on){opacity:.07}
+.dg .edge-lbl{transition:opacity .25s}
+.dg.focusing .pt:not(.on){opacity:0}
+.dg.focusing .node:not(.on){opacity:.24}
+.dg.focusing .edge.on .ln{opacity:1;stroke-width:2.5}
+.dg .spin{transform-box:fill-box;transform-origin:center}
+html.playing .dg .spin{animation:spin 2.4s linear infinite}
+html.playing .dg .spin.slow{animation-duration:7s}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dg .txt{font-family:var(--font-mono);font-size:10.5px;fill:var(--muted)}
+.dg .loop-ic{fill:none;stroke:color-mix(in srgb,var(--tone) 45%,transparent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dg .loop-t{font-family:var(--font-display);font-weight:800;font-size:24px;fill:var(--tone)}
+.dg .loop-s{font-family:var(--font-mono);font-size:10.5px;fill:var(--muted)}
+
+@media (max-width:960px){
+  .hero{grid-template-columns:1fr;gap:24px}
+  .evidence,.axioms,.hz,.chain{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .laws,.anti{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plan-panels,.two{grid-template-columns:minmax(0,1fr)}
+  .plan-panels>div+div{border-left:0;border-top:1px solid var(--line)}
+  .ladder li{grid-template-columns:44px minmax(0,1fr)}
+  .ladder .a{grid-column:2}
+  .layers li{grid-template-columns:minmax(0,1fr) auto}
+  .layers .strength{grid-column:2}
+  .layers li>p{grid-column:1/-1;grid-row:2}
+}
+@media (max-width:760px){
+  .hint{display:block}
+  .chunks,.loops,.verdict,.beliefs,.revlist,.notes4,.guards{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .laws,.anti,.evidence,.axioms,.hz,.chain{grid-template-columns:minmax(0,1fr)}
+  .brand{font-size:19px}
+  .cartouche>div:last-child{margin-left:0}
+}
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">Fonderie</a>
+    <nav class="nav" aria-label="Sections"><a href="#suivi">Niveau atteint</a><a href="#plan">Plan global</a></nav>
+    <button class="btn" id="playBtn" type="button" aria-pressed="false" aria-label="Mettre les animations en pause"></button>
+  </div>
+</header>
+
+<main id="top">
+<div class="wrap"><section id="suivi" aria-labelledby="sv-title">
+  <div class="sec-head">
+    <div class="k">Niveau atteint · relevé le 2026-11-17 16:19</div>
+    <h2 id="sv-title">Où en est Fonderie</h2>
+    <p>Harness multi-agents pour le génie logiciel : Claude Code orchestre, des modèles locaux
+    exécutent, un évaluateur indépendant atteste. Chaque bloc du plan ci-dessous est rempli de gauche
+    à droite selon son avancement vers la cible (blueprint, révision 3). Cliquez un bloc pour lire son
+    rôle et sa vue locale : ce qui est fait et ce qui reste.</p>
+  </div>
+  <div class="sv-dash">
+    <div class="sv-tiles"><div class="sv-tile"><b>57/58</b><span>fonctionnalités vérifiées par l&#x27;évaluateur</span></div><div class="sv-tile"><b>50</b><span>fiches d&#x27;échec, chacune un correctif du harness</span></div><div class="sv-tile"><b>29/33</b><span>tâches de référence vertes au dernier essai</span></div><div class="sv-tile"><b>7423</b><span>tests dans make check</span></div><div class="sv-tile"><b>3349</b><span>commits sur main</span></div></div>
+    <div class="sv-legend">
+      <span class="sv-lo"><i></i>moins d'un tiers</span>
+      <span class="sv-mid"><i></i>un à deux tiers</span>
+      <span class="sv-hi"><i></i>deux tiers et plus</span>
+      <span>Blocs de rôle mesurés sur les trois derniers essais du banc ; les autres évalués le 2026-11-10 07:48.</span>
+    </div>
+  </div>
+</section></div>
+<aside class="sv-local" id="svLocal" hidden aria-label="Vue locale">
+  <button class="btn sv-close" id="svClose" type="button">Fermer</button>
+  <div id="svLocalBody"></div>
+</aside>
+
+<div class="wide">
+  <section id="plan" aria-labelledby="pl-title">
+    <div class="sec-head" style="max-width:1208px;margin-inline:auto">
+      <div class="k">Feuille 3 · plan d’exécution</div>
+      <h2 id="pl-title">Plan global haute résolution</h2>
+      <p>Tous les éléments à mettre en place, à leur place, de l’amorçage à l’apprentissage. Suivez le scénario étape par étape, isolez un type de flux avec la légende, zoomez, ou cliquez sur un bloc pour lire son rôle, la gamme de modèle conseillée et le pattern utilisé.</p>
+    </div>
+    <div class="sheet" id="planSheet">
+      <div class="toolbar">
+        <div class="steps">
+          <span class="k">Scénario</span>
+          <button class="btn" id="prevStep" type="button" aria-label="Étape précédente">◀</button>
+          <div class="dots" id="dots"></div>
+          <button class="btn" id="nextStep" type="button" aria-label="Étape suivante">▶</button>
+          <button class="btn" id="autoStep" type="button" aria-pressed="false">Dérouler</button>
+          <button class="btn" id="allStep" type="button">Tout voir</button>
+        </div>
+        <div class="zoom">
+          <span class="k">Vitesse</span>
+          <button class="btn sp" type="button" data-s="0.5" aria-pressed="false">×0,5</button>
+          <button class="btn sp" type="button" data-s="1" aria-pressed="true">×1</button>
+          <button class="btn sp" type="button" data-s="2" aria-pressed="false">×2</button>
+          <span class="k">Zoom</span>
+          <button class="btn" id="zoomOut" type="button" aria-label="Dézoomer">−</button>
+          <span class="k" id="zoomVal">100 %</span>
+          <button class="btn" id="zoomIn" type="button" aria-label="Zoomer">+</button>
+          <button class="btn" id="fsBtn" type="button">Plein écran</button>
+        </div>
+      </div>
+      <div class="legend" id="planLegend"></div>
+      <p class="hint">Faites glisser horizontalement pour parcourir le plan.</p>
+      <div class="scroll" id="planScroll"><svg id="planSvg" class="plan-svg" role="img" aria-label="Plan global : cockpit, humain, plan de contrôle, orchestrateur, six phases (amorcer, définir, planifier, construire, vérifier, opérer), outils, savoir zoné et télémétrie."></svg></div>
+      <div class="plan-panels">
+        <div id="stepPanel" aria-live="polite"></div>
+        <div id="nodePanel" aria-live="polite"></div>
+      </div>
+      <div class="cartouche"><div>Feuille <b>3/6</b></div><div>Plan global</div><div><b>66</b> blocs · <b>6</b> types de flux · <b>11</b> étapes</div><div>Rév. <b>3 · 2026-10-18</b></div></div>
+    </div>
+  </section>
+</div>
+<div class="wrap"><p class="sv-stamp" style="margin:24px 0 40px">Cyril Bourgeois · code source privé, démo sur demande ·
+<a href="https://github.com/cyril-bgs-dev-tech/fonderie">présentation du projet</a></p></div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const NS="http://www.w3.org/2000/svg";
+const ICONS={
+user:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20.5c1.4-3.6 4.4-5.5 8-5.5s6.6 1.9 8 5.5",
+hub:"M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM5 3.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM19 3.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 18.4a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM6.4 6.4l3.6 3.6M17.6 6.4L14 10M12 14.8v3.6",
+doc:"M7 3h7l4 4v14H7zM14 3v4h4M9.5 11.5h6M9.5 15h6M9.5 18.5h3.5",
+code:"M9 7l-5 5 5 5M15 7l5 5-5 5",
+check:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12.5l2.8 2.8 5.2-5.6",
+shield:"M12 3l7.5 3v5.5c0 4.4-3.1 7.9-7.5 9.5-4.4-1.6-7.5-5.1-7.5-9.5V6zM9 12l2.2 2.2L15.5 10",
+db:"M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3zM5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3",
+plug:"M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4",
+eye:"M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
+loop:"M20 12a8 8 0 1 1-2.4-5.7M20 3.5v4.8h-4.8",
+branch:"M6 3v12M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 9c0 5-6 4-11.2 7.5",
+search:"M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM15.5 15.5l5 5",
+lock:"M6 11h12v9.5H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3",
+key:"M7.5 10.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM10 12l9.5-9.5M16 6l2.5 2.5M13.5 8.5l2 2",
+flask:"M9 3h6M10 3v6.2L4.8 18.3A1.8 1.8 0 0 0 6.4 21h11.2a1.8 1.8 0 0 0 1.6-2.7L14 9.2V3M7.4 15h9.2",
+graph:"M4 4h5v5H4zM15 4h5v5h-5zM9.5 15h5v5h-5zM6.5 9l4.5 6M17.5 9L13 15",
+gate:"M12 2.8l9.2 9.2-9.2 9.2L2.8 12zM8.6 12l2.4 2.4 4.4-4.6",
+rocket:"M14 4.5c3.2-.6 5.6.1 5.6.1s.7 2.4.1 5.6L12.8 17l-5.8-5.8zM7 11.2l-3 .3-.8 2.5 3.4.6M12.8 17l-.3 3-2.5.8-.6-3.4M15.5 8.5h.01",
+leaf:"M5 19c0-8 5.5-14 14.5-14.5C19 13.5 13 19 5 19zM5 19l7.5-7.5",
+stack:"M12 3.5l9 4.8-9 4.8-9-4.8zM3 12.5l9 4.8 9-4.8M3 16.5l9 4.8 9-4.8",
+users:"M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.9-3 3.4-4.8 6.5-4.8s5.6 1.8 6.5 4.8M15.5 4.3a3.5 3.5 0 0 1 0 6.4M18 15.5c1.8.6 3 2.1 3.5 4.5",
+chart:"M4 4v16h16M8 16v-4M12 16V8M16 16v-6",
+coin:"M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM14.6 9.4c-.5-.9-1.5-1.4-2.6-1.4-1.4 0-2.5.8-2.5 2s1.1 1.6 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.5-2.6-1.4M12 6.4V8M12 16v1.6",
+tag:"M3.5 12V3.5H12l8.5 8.5-8.5 8.5zM8 8h.01",
+book:"M4 5.5c2.5-1.2 5.5-1 8 .8 2.5-1.8 5.5-2 8-.8v13.5c-2.5-1.2-5.5-1-8 .8-2.5-1.8-5.5-2-8-.8zM12 6.3v14",
+map:"M3 6l6-2.2 6 2.2 6-2.2v14.4L15 20.4l-6-2.2-6 2.2zM9 3.8v14.4M15 6v14.4",
+list:"M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4.5 18h1.5",
+clock:"M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4h4M12 8v4.2l3 1.8",
+index:"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 17h6M17 14v6",
+scales:"M12 4v16M6 20h12M5.5 7.5h13M6.5 7.5L3.5 14a3 3 0 0 0 6 0zM17.5 7.5L14.5 14a3 3 0 0 0 6 0z",
+contract:"M6.5 3h11v18h-11zM9.5 8h5M9.5 11.5h5M9.5 16l1.6 1.6 3-3",
+merge:"M7 3v6a6 6 0 0 0 6 6h4M7 21v-6M14 12l3 3-3 3",
+signal:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12.5l2.8 2.8 5.2-5.6",
+power:"M12 3v8M7.2 6.3a7.5 7.5 0 1 0 9.6 0",
+radar:"M12 12l6.5-6.5M12 3a9 9 0 1 0 9 9M12 7.5a4.5 4.5 0 1 0 4.5 4.5",
+nodes:"M3 4h5v5H3zM16 4h5v5h-5zM9.5 15h5v5h-5zM8 6.5h8M5.5 9v3.5a2 2 0 0 0 2 2h2M18.5 9v3.5a2 2 0 0 1-2 2h-2",
+play:"M7 4.5v15l12-7.5z",
+relay:"M4 8h13l-3.5-3.5M20 16H7l3.5 3.5",
+target:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zM12 11.6v.8",
+impact:"M12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM8 8a5.7 5.7 0 0 0 0 8M16 8a5.7 5.7 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"
+};
+const TONE={human:"intent",control:"control",boot:"control",define:"context",plan:"intent",build:"task",verify:"verify",operate:"learn",tools:"control",memory:"context",obs:"learn",intent:"intent",task:"task",context:"context",learn:"learn"};
+const tv=g=>"var(--f-"+(TONE[g]||"control")+")";
+function S(tag,attrs,parent){const e=document.createElementNS(NS,tag);if(attrs){for(const k in attrs){if(attrs[k]!==undefined&&attrs[k]!==null)e.setAttribute(k,attrs[k]);}}if(parent)parent.appendChild(e);return e;}
+function T(parent,x,y,str,cls,fs,maxw,extra){const a=Object.assign({x:x,y:y,class:cls},extra||{});const t=S("text",a,parent);t.textContent=str;if(fs){t.style.fontSize=fs+"px";t.dataset.fs=fs;}if(maxw){t.dataset.maxw=Math.max(10,maxw);}return t;}
+function icon(parent,name,x,y,size,cls){const sc=size/24;S("path",{class:cls||"ic",d:ICONS[name]||ICONS.doc,transform:"translate("+x+","+y+") scale("+sc+")"},parent);}
+function dedupe(pts){const o=[];pts.forEach(p=>{const l=o[o.length-1];if(!l||l[0]!==p[0]||l[1]!==p[1])o.push(p);});return o;}
+function pathD(pts,r){r=r||8;let d="M"+pts[0][0]+","+pts[0][1];for(let i=1;i<pts.length-1;i++){const a=pts[i-1],b=pts[i],c=pts[i+1];const d1=Math.hypot(b[0]-a[0],b[1]-a[1]),d2=Math.hypot(c[0]-b[0],c[1]-b[1]);const rr=Math.min(r,d1/2,d2/2);const ax=b[0]-(b[0]-a[0])/d1*rr,ay=b[1]-(b[1]-a[1])/d1*rr,bx=b[0]+(c[0]-b[0])/d2*rr,by=b[1]+(c[1]-b[1])/d2*rr;d+=" L"+ax.toFixed(2)+","+ay.toFixed(2)+" Q"+b[0]+","+b[1]+" "+bx.toFixed(2)+","+by.toFixed(2);}const l=pts[pts.length-1];d+=" L"+l[0]+","+l[1];return d;}
+function arrowAt(g,from,to){const a=Math.atan2(to[1]-from[1],to[0]-from[0])*180/Math.PI;S("path",{class:"ah",d:"M0,0 L-8,-4.2 L-8,4.2 Z",transform:"translate("+to[0]+","+to[1]+") rotate("+a.toFixed(1)+")"},g);}
+
+function drawPanel(g,p){
+  const tone=tv(p.g||"control");
+  if(p.kind==="lanehead"){T(g,p.x+4,p.y+p.h/2-1,p.t,"lh-t");if(p.s)T(g,p.x+4,p.y+p.h/2+16,p.s,"lh-s");return;}
+  if(p.kind==="ghost"){S("rect",{class:"ghost",x:p.x,y:p.y,width:p.w,height:p.h,rx:9},g);return;}
+  if(p.kind==="frame"){const gg=S("g",{style:"--tone:"+tone},g);S("rect",{class:"fr",x:p.x,y:p.y,width:p.w,height:p.h,rx:p.small?12:16},gg);const tx=S("text",{x:p.x+(p.small?12:20),y:p.y+(p.small?18:30),class:"fr-t"+(p.small?" sm":"")},gg);const a=S("tspan",{},tx);a.textContent=p.t;if(p.s){const b=S("tspan",{class:"fr-s",dx:10},tx);b.textContent=p.s;}return;}
+  if(p.kind==="bubble"){const gg=S("g",{style:"--tone:"+tone},g);S("rect",{class:"bubble",x:p.x,y:p.y,width:p.w,height:p.h,rx:11},gg);if(p.t)T(gg,p.x+12,p.y+17,p.t,"bubble-t");return;}
+  if(p.kind==="loopc"){const gg=S("g",{style:"--tone:"+tone},g);const sp=S("g",{class:"spin slow"},gg);icon(sp,"loop",p.x-42,p.y-48,84,"loop-ic");T(gg,p.x,p.y+2,p.t,"loop-t",null,null,{"text-anchor":"middle"});T(gg,p.x,p.y+40,p.s,"loop-s",null,null,{"text-anchor":"middle"});return;}
+  const gg=S("g",{style:"--tone:"+tone},g);
+  S("rect",{class:"pn",x:p.x,y:p.y,width:p.w,height:p.h,rx:12},gg);
+  if(p.kind==="phase"){T(gg,p.x+16,p.y+26,p.n,"ph-n");T(gg,p.x+40,p.y+27,p.t,"ph-t");}
+}
+
+function drawNode(parent,n){
+  const kind=n.kind||"node";
+  const g=S("g",{class:"node k-"+kind,style:"--tone:"+tv(n.g),"data-id":n.id},parent);
+  const cy=n.y+n.h/2;
+  if(kind==="node"||kind==="gate"){
+    S("rect",{class:"box"+(kind==="gate"?" gatebox":""),x:n.x,y:n.y,width:n.w,height:n.h,rx:9},g);
+    let tx=n.x+12;
+    if(n.icon){const s=n.h>=46?26:(n.h>=40?22:20);const iy=n.y+(n.h-s)/2;S("rect",{class:"ic-bg",x:n.x+9,y:iy,width:s,height:s,rx:6},g);icon(g,n.icon,n.x+9+s*.14,iy+s*.14,s*.72);tx=n.x+9+s+9;}
+    const mw=n.x+n.w-9-tx, fs=n.fs||13;
+    if(n.s){T(g,tx,cy-2.5,n.t,"t",fs,mw);T(g,tx,cy+12.5,n.s,"s",n.sfs||11,mw);}else{T(g,tx,cy+4.5,n.t,"t",fs,mw);}
+  } else if(kind==="tool"){
+    S("rect",{class:"box",x:n.x,y:n.y,width:n.w,height:n.h,rx:8},g);
+    const fs=n.fs||12.5, mw=n.w-16;
+    if(n.s){T(g,n.x+n.w/2,cy-3,n.t,"t",fs,mw,{"text-anchor":"middle"});T(g,n.x+n.w/2,cy+12,n.s,"s",10.5,mw,{"text-anchor":"middle"});}else{T(g,n.x+n.w/2,cy+4.3,n.t,"t",fs,mw,{"text-anchor":"middle"});}
+  } else if(kind==="wide"){
+    S("rect",{class:"box",x:n.x,y:n.y,width:n.w,height:n.h,rx:11},g);
+    const s=n.h>=80?34:28, iy=cy-s/2;
+    S("rect",{class:"ic-bg",x:n.x+12,y:iy,width:s,height:s,rx:8},g);icon(g,n.icon,n.x+12+s*.14,iy+s*.14,s*.72);
+    const tx=n.x+12+s+12, lw=n.leftW||Math.round(n.w*.32), mw=n.x+lw-tx-8;
+    T(g,tx,cy-(n.h>=80?4:2),n.t,"t",n.fs||14,mw);T(g,tx,cy+(n.h>=80?15:13),n.s,"s",n.sfs||11.5,mw);
+    const chips=n.chips||[], rows=n.chipRows||2, cols=Math.ceil(chips.length/rows), gap=8, ch=n.chipH||28;
+    const ax=n.x+lw, aw=n.w-lw-12, cw=(aw-(cols-1)*gap)/cols, th=rows*ch+(rows-1)*gap, y0=n.y+(n.h-th)/2;
+    chips.forEach((c,i)=>{const r=Math.floor(i/cols),k=i%cols,x=ax+k*(cw+gap),y=y0+r*(ch+gap);S("rect",{class:"chip",x:x,y:y,width:cw,height:ch,rx:7},g);T(g,x+cw/2,y+ch/2+4,c,"chip-t",n.chipFs||11.5,cw-12,{"text-anchor":"middle"});});
+  } else if(kind==="stack"){
+    S("rect",{class:"box",x:n.x,y:n.y,width:n.w,height:n.h,rx:10},g);
+    S("rect",{class:"ic-bg",x:n.x+9,y:n.y+7,width:20,height:20,rx:5},g);icon(g,n.icon,n.x+11.8,n.y+9.8,14.4);
+    T(g,n.x+36,n.y+22,n.t,"t",13,n.w-90);
+    if(n.badge)T(g,n.x+n.w-12,n.y+22,n.badge,"badge",12,null,{"text-anchor":"end"});
+    const nl=n.lanes.length, ls=(n.h-40)/nl, lh=ls-8;
+    n.lanes.forEach((ln,k)=>{const ly=n.y+32+k*ls;S("rect",{class:"lane",x:n.x+10,y:ly,width:n.w-20,height:lh,rx:8},g);const mid=ly+lh/2;T(g,n.x+22,mid-3,ln[0],"t",12.5,n.w-(n.noSpin?40:80));T(g,n.x+22,mid+12,ln[1],"s",10.5,n.w-(n.noSpin?40:80));if(!n.noSpin){const sp=S("g",{class:"spin"},g);icon(sp,"loop",n.x+n.w-42,mid-12,24);}});
+  } else if(kind==="rail"){
+    S("rect",{class:"box",x:n.x,y:n.y,width:n.w,height:n.h,rx:11},g);
+    n.t.split("\n").forEach((l,i)=>T(g,n.x+14,n.y+30+i*20,l,"rl-t"));
+    S("line",{class:"rl-sep",x1:n.x+14,x2:n.x+n.w-14,y1:n.y+66,y2:n.y+66},g);
+    const step=n.step||48;
+    n.items.forEach((it,i)=>{const y=n.y+92+i*step;S("rect",{class:"ri",x:n.x+16,y:y-8,width:7,height:7,rx:1,transform:"rotate(45 "+(n.x+19.5)+" "+(y-4.5)+")"},g);it.split("\n").forEach((l,j)=>T(g,n.x+31,y-1+j*15,l,j?"s":"t",j?11:12.5,n.w-40));});
+  }
+  return g;
+}
+
+function drawEdge(gE,gPt,e,gL){
+  const pts=dedupe(e.pts);
+  const g=S("g",{class:"edge"+(e.dash?" dash":""),style:"--fc:var(--f-"+e.f+")"},gE);
+  const n=pts.length, last=pts[n-1], prev=pts[n-2];
+  const dl=Math.hypot(last[0]-prev[0],last[1]-prev[1]);
+  const draw=pts.map(p=>p.slice());
+  if(dl>10){draw[n-1]=[last[0]-(last[0]-prev[0])/dl*5,last[1]-(last[1]-prev[1])/dl*5];}
+  if(e.bi){const f0=pts[0],f1=pts[1],d0=Math.hypot(f1[0]-f0[0],f1[1]-f0[1]);if(d0>10)draw[0]=[f0[0]+(f1[0]-f0[0])/d0*5,f0[1]+(f1[1]-f0[1])/d0*5];}
+  S("path",{class:"ln",d:pathD(draw)},g);
+  const path=S("path",{d:pathD(pts),fill:"none",stroke:"none"},g);
+  arrowAt(g,prev,last);
+  if(e.bi)arrowAt(g,pts[1],pts[0]);
+  let lg=null;
+  if(e.label){const L=e.label;lg=S("g",Object.assign({class:"edge-lbl",style:"--fc:var(--f-"+e.f+")"},L.rot?{transform:"rotate("+L.rot+" "+L.x+" "+L.y+")"}:{}),gL||g);S("rect",{class:"lbg",rx:3},lg);T(lg,L.x,L.y,L.t,"elabel"+(L.sign?" sign":""),null,null,{"text-anchor":L.anchor||"middle"});}
+  const len=path.getTotalLength();
+  const cnt=Math.max(e.bi?2:1,Math.round(len/150));
+  const period=Math.max(len/72,1.5);
+  const parts=[];
+  for(let i=0;i<cnt;i++){const pg=S("g",{class:"pt",style:"--fc:var(--f-"+e.f+")"},gPt);S("circle",{class:"halo",r:6.5},pg);S("circle",{class:"core",r:2.9},pg);parts.push(pg);}
+  return {id:e.id,f:e.f,a:e.a,b:e.b,bi:!!e.bi,g:g,lg:lg,path:path,len:len,parts:parts,period:period};
+}
+
+const DIAGS=[];
+class Diagram{
+  constructor(svg,spec,opts){this.svg=svg;this.spec=spec;this.opts=opts||{};this.E=[];this.N={};this.t=Math.random()*6;this.visible=true;this.sel=null;this.render();DIAGS.push(this);svg.__dg=this;}
+  render(){
+    const s=this.spec,svg=this.svg;
+    svg.setAttribute("viewBox","0 "+(s.y0||0)+" "+s.w+" "+s.h);svg.classList.add("dg");
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    const gP=S("g",{},svg),gE=S("g",{},svg),gPt=S("g",{"aria-hidden":"true"},svg),gL=S("g",{},svg),gN=S("g",{},svg),gX=S("g",{},svg);
+    (s.panels||[]).forEach(p=>drawPanel(gP,p));
+    (s.edges||[]).forEach(e=>this.E.push(drawEdge(gE,gPt,e,gL)));
+    (s.nodes||[]).forEach(n=>{
+      const g=drawNode(gN,n);this.N[n.id]=g;
+      if(this.opts.onNode){
+        g.classList.add("click");g.setAttribute("tabindex","0");g.setAttribute("role","button");g.setAttribute("aria-label",n.t.replace("\n"," "));
+        const go=()=>{this.select(n.id);this.opts.onNode(n.ref||n.id,n);};
+        g.addEventListener("click",go);
+        g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();go();}});
+      }
+    });
+    (s.texts||[]).forEach(t=>T(gX,t.x,t.y,t.t,"txt",null,null,{"text-anchor":t.anchor||"middle"}));
+    this.tick(0);
+  }
+  select(id){if(this.sel&&this.N[this.sel])this.N[this.sel].classList.remove("sel");this.sel=id;if(id&&this.N[id])this.N[id].classList.add("sel");}
+  focus(f){
+    const svg=this.svg;
+    if(!f){svg.classList.remove("focusing");this.E.forEach(E=>{E.g.classList.remove("on");if(E.lg)E.lg.classList.remove("on");E.parts.forEach(p=>p.classList.remove("on"));});Object.values(this.N).forEach(n=>n.classList.remove("on"));return;}
+    svg.classList.add("focusing");
+    const on=new Set(f.nodes||[]);
+    this.E.forEach(E=>{const hit=(f.edges&&f.edges.indexOf(E.id)>=0)||(f.flows&&f.flows.has(E.f));E.g.classList.toggle("on",!!hit);if(E.lg)E.lg.classList.toggle("on",!!hit);E.parts.forEach(p=>p.classList.toggle("on",!!hit));if(hit&&f.flows){if(E.a)on.add(E.a);if(E.b)on.add(E.b);}});
+    Object.keys(this.N).forEach(id=>this.N[id].classList.toggle("on",on.has(id)));
+  }
+  tick(dt){
+    this.t+=dt;
+    for(const E of this.E){
+      const c=E.parts.length;
+      for(let i=0;i<c;i++){
+        let f=((this.t/E.period)+i/c)%1;
+        if(E.bi&&i%2)f=1-f;
+        const p=E.path.getPointAtLength(f*E.len);
+        const op=Math.min(1,f*7,(1-f)*7);
+        E.parts[i].setAttribute("transform","translate("+p.x.toFixed(1)+","+p.y.toFixed(1)+")");
+        E.parts[i].setAttribute("opacity",op.toFixed(2));
+      }
+    }
+  }
+}
+function fitAll(root){
+  root.querySelectorAll("text[data-maxw]").forEach(t=>{
+    const max=+t.dataset.maxw;let fs=parseFloat(t.dataset.fs)||12;t.style.fontSize=fs+"px";let guard=0;
+    try{while(t.getComputedTextLength()>max&&fs>8&&guard++<30){fs-=.5;t.style.fontSize=fs+"px";}}catch(err){}
+  });
+  root.querySelectorAll("rect.lbg").forEach(r=>{
+    const t=r.nextSibling;if(!t)return;
+    try{const b=t.getBBox();r.setAttribute("x",(b.x-4).toFixed(1));r.setAttribute("y",(b.y-1).toFixed(1));r.setAttribute("width",(b.width+8).toFixed(1));r.setAttribute("height",(b.height+2).toFixed(1));}catch(err){}
+  });
+}
+
+/* ---------- Rôles ---------- */
+/* ---------- Révision 3 ---------- */
+ICONS.monitor="M3 4.5h18v11.5H3zM8.5 20h7M12 16v4";
+const INFO={"h0": {"t": "Lance le projet", "r": "Le tech lead fixe l’objectif, le budget et le niveau d’autonomie accordé. Le courtier émet à partir de là la clé racine de la mission.", "m": "Humain", "p": "Intention", "g": "human"}, "h1": {"t": "Valide cadrage & spec", "r": "Relit la vraie question, les non-objectifs, les critères d’acceptation et l’oracle externe avant toute ligne de code. Une heure ici évite des jours de code jeté.", "m": "Humain", "p": "Gate humaine", "g": "human"}, "h2": {"t": "Arbitre le plan", "r": "Tranche les choix structurants : découpage, interfaces, ADR, sérialisation des tâches à risque. L’orchestrateur lui présente options, risques et coûts estimés.", "m": "Humain", "p": "Gate humaine", "g": "human"}, "h3": {"t": "Débloque les escalades", "r": "Reçoit les « questions ouvertes » qu’aucun agent ne doit trancher seul : ambiguïté de spec, dépendance externe, choix irréversible. Un worker bloqué escalade avec son contexte au lieu d’improviser.", "m": "Humain", "p": "Escalade", "g": "human"}, "h4": {"t": "Approuve le merge", "r": "Ne voit dans le cockpit que les merges que la gate n’a pas pu décider seule : changements irréversibles ou à fort rayon d’impact. Décide sur dossier de preuves.", "m": "Humain", "p": "Verifier-gated", "g": "human"}, "h5": {"t": "Autorise la release", "r": "Garde la main sur tout ce qui est irréversible : mise en production, passage du canari à 100 %, migration de données.", "m": "Humain", "p": "Verifier-gated", "g": "human"}, "orch": {"t": "Orchestrateur de mission", "r": "Un orchestrateur par mission ; l’ordonnanceur de flotte (du code, pas un LLM) en fait tourner M en parallèle sur un moteur d’exécution durable. Il tient un DAG réévalué à chaque découverte, choisit les modèles par un routage appris sur le banc, lance plusieurs tentatives sur les nœuds durs et dérive une clé atténuée par tâche. Il reçoit des résumés typés, ne voit pas les tests cachés et ne code pas.", "m": "Frontier, effort de raisonnement élevé", "p": "Planner-Executor, superviseur", "g": "control"}, "rail": {"t": "Plan de contrôle", "r": "Couche transverse appliquée hors du prompt : courtier de clés, zones montées à la demande, baux d’écriture, règle de deux, secrets injectés, budgets, approbations, kill switch. S’y ajoutent l’exécution durable, qui fait reprendre chaque étape après une panne, et la provenance : chaque commit est signé avec l’identité de l’agent et sa mission.", "m": "Code et configuration, aucun LLM", "p": "Guardrails, capacités", "g": "control"}, "boot0": {"t": "Initialiseur", "r": "Bootstrap froid d’un projet neuf, exécuté une seule fois. Il pose le squelette du harness, init.sh, feature_list.json, progress.md, un premier AGENTS.md et le premier commit. Ce qu’il produit est exactement ce que chaque bootstrap chaud relira.", "m": "Frontier", "p": "Bootstrap froid", "g": "boot"}, "boot1": {"t": "Archéologue", "r": "Bootstrap froid d’un code existant. Il lit le dépôt, rétro-documente l’architecture et écrit des tests de caractérisation qui figent le comportement actuel avant toute modification.", "m": "Frontier ou équilibré", "p": "Bootstrap froid (brownfield)", "g": "boot"}, "boot2": {"t": "Indexeur de graphe", "r": "Construit le graphe de code avec GitNexus et le réindexe à chaque merge. Il l’enrichit des chemins réellement exécutés (traces de tests et de production), ce qui complète le graphe statique. Un index par zone, sans les tests cachés.", "m": "Outil, aucun LLM", "p": "Infrastructure de savoir", "g": "boot"}, "boot3": {"t": "Rituel de reprise", "r": "Bootstrap chaud, au début de chaque session : lire progress.md et git log, relancer le test de base, prendre une seule tâche. Il doit être court, idempotent et mesuré : temps pour atteindre un état vert.", "m": "Procédure dans chaque agent", "p": "Bootstrap chaud", "g": "boot"}, "boot4": {"t": "Relève à chaud", "r": "Quand le contexte d’un agent sature en pleine tâche, il écrit une relève typée (fait, reste à faire, pièges, fichiers touchés) et un agent neuf reprend avec un contexte propre. C’est le Worker A′ du plan.", "m": "Procédure + contrat handoff@1", "p": "Bootstrap chaud en cours de tâche", "g": "boot"}, "framer": {"t": "Cadreur", "r": "Avant la spec, il remonte de la demande à la vraie question, propose des reformulations, nomme l’hypothèse critique et le test le moins cher pour l’invalider, liste les non-objectifs et désigne l’oracle externe. Sa profondeur dépend de l’irréversibilité de la décision.", "m": "Frontier", "p": "Questionnement, réflexif", "g": "define"}, "explorer": {"t": "Explorateur", "r": "Interroge le graphe de code puis lit les fichiers utiles, en lecture seule. Rend une carte compacte : modules, points d’entrée, conventions, zones à risque.", "m": "Rapide ou équilibré", "p": "ReAct en lecture seule", "g": "define"}, "research": {"t": "Chercheur", "r": "Lit les sources brutes : documentation des dépendances, RFC, code source amont, issues. Rend des faits sourcés. Sa session lit la zone externe et est donc marquée non fiable : il n’écrit nulle part ailleurs que dans son rapport.", "m": "Rapide ou équilibré", "p": "ReAct, session marquée", "g": "define"}, "spec": {"t": "Agent spec", "r": "Transforme le cadrage en spec exécutable : exigences au format EARS, cas limites, exigences non fonctionnelles, critères d’acceptation vérifiables. Il décrit le quoi et le pourquoi.", "m": "Frontier", "p": "Spec-driven, puis gate humaine", "g": "define"}, "archi": {"t": "Architecte", "r": "Fixe les frontières : modules, interfaces, contrats d’API, schéma de données, invariants. Consigne chaque décision dans un ADR court. Les invariants deviennent des tests d’architecture.", "m": "Frontier", "p": "Planner", "g": "define"}, "planner": {"t": "Planificateur", "r": "Découpe la spec en tâches petites et aussi indépendantes que possible, ordonnées en DAG. Chaque tâche porte ses critères d’acceptation.", "m": "Frontier", "p": "Planner-Executor", "g": "plan"}, "critic": {"t": "Critique · pré-mortem", "r": "Agent adversarial au contexte séparé. Il imagine que le plan a échoué dans six mois et cherche pourquoi : dépendances cachées, tâches trop grosses, critères invérifiables, hypothèse critique non testée. Il renvoie le plan tant qu’il y trouve des trous.", "m": "Frontier, idéalement d’une autre famille", "p": "Verifier-gated sur le plan", "g": "plan"}, "impact": {"t": "Analyse d’impact", "r": "Interroge le graphe (impact, api_impact) pour chaque tâche. Deux tâches qui touchent le même cluster sont sérialisées ; le rayon d’impact définit le bail d’écriture et un score de risque qui décide si la gate peut merger seule.", "m": "Outil + équilibré", "p": "Prévention des conflits", "g": "plan"}, "contracts": {"t": "Contrats de sprint", "r": "Avant de coder, worker et évaluateur s’accordent sur ce que « fini » veut dire : scénarios testables, seuils, preuves attendues. Format sprint-contract@1.", "m": "Artefact négocié", "p": "Contrat", "g": "plan"}, "testw": {"t": "Auteur de tests", "r": "Écrit les tests d’acceptation à partir de la spec : un jeu visible, en lecture seule pour les workers, et un jeu caché monté pour l’évaluateur seul. Les deux démarrent en rouge.", "m": "Équilibré", "p": "TDD, rôle séparé", "g": "plan"}, "workers": {"t": "Implémenteurs × N", "r": "Plusieurs agents en parallèle, chacun dans son sandbox avec un contexte neuf et une clé atténuée : écriture limitée à son bail, tests en lecture seule, pas de réseau. Sur un nœud dur, plusieurs tentatives tournent en parallèle (Worker B ×3) et l’évaluateur choisit sur les tests visibles. Chacun rend un résumé typé ; le Worker A′ montre une relève à chaud.", "m": "Frontier ou équilibré, par routage appris", "p": "ReAct, best-of-N", "g": "build"}, "integ": {"t": "Intégrateur", "r": "Fusionne les branches dans l’ordre du DAG via une file de merge, lance la suite complète et rend l’état d’intégration à l’orchestrateur. Un échec redevient une tâche.", "m": "Équilibré", "p": "Pipeline", "g": "build"}, "gateq": {"t": "Gate qualité graduée", "r": "Porte finale graduée par le rayon d’impact. Réversible, faible impact, tout vert, preuves jointes : merge automatique. Sinon, décision humaine dans le cockpit. Jamais de merge sans preuves, quoi qu’affirme un agent.", "m": "Règles codées", "p": "Verifier-gated", "g": "verify"}, "review": {"t": "Panel de revue", "r": "Relecteurs spécialisés en parallèle (sécurité, performance, architecture, fiabilité), idéalement de plusieurs familles de modèles. La revue boucle jusqu’à accord, dans une limite de tours. Un constat bloquant doit être reproduit avant de bloquer, et la précision de chaque relecteur est suivie dans le temps.", "m": "Frontier ou équilibré, plusieurs familles", "p": "Revue en boucle", "g": "verify"}, "evalqa": {"t": "Évaluateur QA", "r": "Évaluateur indépendant réglé pour être sévère. Il pilote l’app en boîte noire (captures, vidéo, console), sans accès au code, note chaque critère du contrat et joint ses preuves. Il écrit des tests adverses qui rejoignent le jeu caché, et son jugement est calibré contre des annotations humaines. Seul agent autorisé à basculer le registre.", "m": "Frontier", "p": "Générateur et évaluateur", "g": "verify"}, "antitriche": {"t": "Garde anti-triche", "r": "Contrôle déterministe contre l’optimisation des tests : exécute les tests cachés, signale toute modification de test dans le diff, échantillonne du mutation testing. Un écart entre tests visibles et cachés signale une triche probable.", "m": "Aucun LLM", "p": "Verifier-gated", "g": "verify"}, "detv": {"t": "Vérificateur déterministe", "r": "Première porte, la moins chère : build, typage, lint, tests unitaires et d’acceptation, tests d’architecture, SAST, audit des dépendances. Aucun juge LLM tant que ces signaux ne sont pas verts.", "m": "Aucun LLM", "p": "Verifier-gated", "g": "verify"}, "release": {"t": "Agent release", "r": "Prépare la PR finale, le changelog et la note de migration. Déploie derrière un feature flag puis en canari, avec retour arrière automatique.", "m": "Équilibré", "p": "Pipeline outillé", "g": "operate"}, "sre": {"t": "Observateur SRE", "r": "Surveille logs, métriques et traces après le déploiement. Chaque incident devient une tâche reproduite, sous forme de test qui échoue, renvoyée à l’orchestrateur.", "m": "Équilibré", "p": "Boucle de rétroaction", "g": "operate"}, "analyst": {"t": "Analyste d’échecs", "r": "Pour chaque échec : cinq pourquoi (la chaîne des causes) et cinq pour quoi (ce que l’agent cherchait à obtenir). La seconde chaîne révèle l’incitation qui produit le comportement. Il remplit une fiche failure@1 et propose le type de correction.", "m": "Frontier", "p": "Post-mortem structuré", "g": "operate"}, "gardener": {"t": "Jardinier du harness", "r": "Applique les corrections structurelles : permission, test, contrat, skill, et en dernier recours le prompt. Chaque correction est validée sur le banc avant sa PR, approuvée par un humain. Les promotions de l’optimiseur passent par lui.", "m": "Frontier", "p": "Amélioration continue", "g": "operate"}, "bg": {"t": "Agents de fond", "r": "Agents planifiés : montée de dépendances, tests instables, dette, docs périmées. Petites PR, même chaîne de vérification. Ceux qui lisent des changelogs externes ont une session marquée.", "m": "Rapide ou équilibré", "p": "Tâches planifiées", "g": "operate"}, "t0a": {"t": "Init & conteneurs", "r": "Un devcontainer et init.sh reproduisent l’environnement en une commande. Chaque agent reçoit un conteneur où seules les zones de sa clé sont montées.", "m": "Infrastructure", "p": "Isolation", "g": "tools"}, "t0b": {"t": "GitNexus", "r": "Indexe le dépôt en graphe (Tree-sitter) : symboles, clusters, flux d’exécution. Expose en MCP query, context, impact, detect_changes, check et d’autres. Licence PolyForm Noncommercial, à vérifier avant usage commercial.", "m": "Outil", "p": "MCP", "g": "tools"}, "t1a": {"t": "Recherche code", "r": "Recherche textuelle et serveur de langage (LSP) pour définitions et références, en complément du graphe.", "m": "Outil", "p": "MCP ou CLI", "g": "tools"}, "t1b": {"t": "MCP docs & web", "r": "Accès à la documentation et au web. Tout contenu externe est une donnée, jamais une instruction ; la session qui le lit perd l’écriture sur le code et la production.", "m": "Outil", "p": "MCP, zone externe", "g": "tools"}, "t2a": {"t": "Skills", "r": "Savoir-faire empaqueté (SKILL.md, scripts, gabarits), chargé seulement quand la tâche le demande.", "m": "Outil", "p": "SKILL.md", "g": "tools"}, "t2b": {"t": "Tests d’acceptation", "r": "Écrits avant le code. Les workers peuvent les lancer, pas les modifier : règle Edit refusée et montage en lecture seule.", "m": "Artefact", "p": "Oracle", "g": "tools"}, "t3a": {"t": "Sandbox", "r": "Un sandbox par worker : microVM en cloud, réseau coupé par défaut, instantanés pour forker une tentative. En local, isolation: worktree dans le frontmatter d’un subagent Claude Code fait l’essentiel.", "m": "Infrastructure", "p": "Isolation", "g": "tools"}, "t3b": {"t": "Capteurs rapides", "r": "Signaux en secondes : compilateur, typage, lint, et seulement les tests touchés par le changement, sélectionnés par le graphe, avec cache de build distant.", "m": "Outil", "p": "Feedback calculatoire", "g": "tools"}, "t4a": {"t": "Navigateur", "r": "Playwright MCP ou Chrome DevTools MCP : l’évaluateur clique, remplit, capture et lit la console.", "m": "Outil", "p": "MCP", "g": "tools"}, "t4b": {"t": "Mutation & SAST", "r": "Le mutation testing mesure si les tests détectent vraiment les erreurs ; SAST et audit des dépendances repèrent failles et paquets inconnus.", "m": "Outil", "p": "Feedback calculatoire", "g": "tools"}, "t5a": {"t": "CI/CD · flags", "r": "Pipeline de livraison, feature flags, déploiement progressif et retour arrière automatique.", "m": "Infrastructure", "p": "Livraison", "g": "tools"}, "t5b": {"t": "A2A", "r": "Protocole Agent2Agent (v1.0). Les rôles de la Fonderie publient leur agent card pour que d’autres équipes leur délèguent du travail, avec clé atténuée et contrat typé.", "m": "Protocole", "p": "A2A", "g": "tools"}, "z00": {"t": "Graphe de code", "r": "Index GitNexus du code, enrichi des chemins exécutés, servi en lecture seule par la passerelle MCP avec recherche hybride (graphe, mots-clés, sémantique). Les tests cachés en sont exclus.", "m": "Zone Z1", "p": "Savoir", "g": "memory"}, "z01": {"t": "Journal & relèves", "r": "progress.md, fichiers de relève et historique git. C’est ce que relit tout bootstrap chaud.", "m": "Zone Z5", "p": "État durable", "g": "memory"}, "z10": {"t": "Docs & ADR", "r": "Docs de conception et décisions d’architecture indexées, avec un statut de vérification. AGENTS.md y renvoie.", "m": "Zone Z0", "p": "Source de vérité", "g": "memory"}, "z11": {"t": "Cadrage", "r": "framing.md : vraie question, hypothèses critiques et leurs tests, non-objectifs, oracle externe, questions ouvertes.", "m": "Zone Z2", "p": "framing@1", "g": "memory"}, "z20": {"t": "Spec · plan · tâches", "r": "Spec, plan et tâches en Markdown dans le dépôt. Ce sont eux qui font foi, jamais la conversation.", "m": "Zone Z2", "p": "Spec-driven", "g": "memory"}, "z21": {"t": "Contrats & schémas", "r": "Schémas versionnés des artefacts échangés : task, lease, handoff, sprint-contract, verdict, failure, framing. Ce sont les prises du puzzle.", "m": "dépôt privé", "p": "Ports", "g": "memory"}, "z30": {"t": "Code source", "r": "Chaque worker n’écrit que dans les chemins de son bail, calculés par l’analyse d’impact.", "m": "Zone Z1", "p": "Écriture par bail", "g": "memory"}, "z31": {"t": "Tests visibles", "r": "En lecture seule pour tous sauf l’auteur de tests.", "m": "Zone Z3", "p": "Oracle", "g": "memory"}, "z40": {"t": "Tests cachés", "r": "Montés pour l’évaluateur et la garde anti-triche seulement. Ni l’orchestrateur ni les workers ne les voient, pour qu’ils ne fuient pas dans les descriptions de tâches.", "m": "Zone Z4", "p": "Oracle protégé", "g": "memory"}, "z41": {"t": "Registre", "r": "feature_list.json. Seul l’évaluateur bascule un booléen passes, après vérification. Personne ne réécrit la liste.", "m": "Zone Z6", "p": "État durable", "g": "memory"}, "z50": {"t": "Mémoire épisodique", "r": "Leçons des runs passés, vérifiées par le banc, datées et retirées quand elles ne servent plus. Consultées au démarrage d’une tâche similaire.", "m": "Mémoire", "p": "Apprentissage", "g": "memory"}, "z51": {"t": "AGENTS.md & politiques", "r": "La carte injectée à chaque session, hiérarchique (racine et dossiers) et lintée, et les politiques d’accès. Modifiables uniquement par PR approuvée.", "m": "Zones Z0 et Z7", "p": "Guide feedforward", "g": "memory"}, "cockpit": {"t": "Cockpit de pilotage", "r": "L’interface humaine du système. Il lit les artefacts existants (verdicts, registre, journal, audit, traces) sans en créer : file de décisions triée par irréversibilité et rayon d’impact, dossier de preuves par PR, vue de la flotte, replay de traces, pause, arrêt et réaffectation, approbation depuis le téléphone. Les vues sont filtrées par rôle : les tests cachés restent réservés aux mainteneurs.", "m": "Application, aucun LLM requis", "p": "Interface de pilotage", "g": "human"}, "o0": {"t": "Traces et replay", "r": "Chaque appel, chaque relève et chaque accès est tracé selon OpenTelemetry GenAI, avec un contexte propagé d’un agent à l’autre. Le replay rejoue une mission pas à pas pour comprendre un échec.", "m": "Observabilité", "p": "AgentOps", "g": "obs"}, "o1": {"t": "Coût et SLO", "r": "Coût, tokens et latence par agent, par mission et par PR mergée. Alertes sur les anomalies (boucle, explosion de coût). SLO de flotte : taux de succès, délai, escalades, minutes humaines par PR.", "m": "Observabilité", "p": "AgentOps", "g": "obs"}, "o2": {"t": "Journal d’audit chaîné", "r": "Trace en ajout seul, chaînée par hachage : clés émises, accès, refus, approbations. Chaque commit est signé avec l’identité de l’agent et l’identifiant de mission, ce qui donne la provenance de chaque ligne.", "m": "Observabilité", "p": "Conformité, provenance", "g": "obs"}, "o3": {"t": "Banc d’essai", "r": "Tâches tirées de l’historique (anciennes PR rejouées depuis leur commit parent), bugs injectés, échantillons de benchmarks publics pour calibrer. Trois paliers : fumée à chaque changement, régression chaque nuit, ombre sur le trafic réel. Plusieurs essais par tâche (pass@k, pass^k), intervalles de confiance, coût par tâche résolue. Un split caché que seul le banc voit.", "m": "Calcul", "p": "Evals", "g": "obs"}, "o4": {"t": "Optimiseur de harness", "r": "Génère des variantes (prompts, skills, routage, seuils, pièces actives) à partir des fiches d’échec, les évalue sur le split visible et ne propose que celles que confirme le split caché. Promotion par PR approuvée, retour arrière si le mode ombre régresse. Budget de recherche plafonné.", "m": "Frontier", "p": "Méta-harness", "g": "obs"}, "o5": {"t": "Taxonomie d’échecs", "r": "Chaque échec est classé : spécification, coordination entre agents ou vérification (MAST). La catégorie oriente la correction et alimente l’optimiseur.", "m": "Évaluation", "p": "MAST", "g": "obs"}};
+function infoHTML(key){
+  const I=INFO[key];if(!I)return "";
+  return '<div class="info" style="--fc:'+tv(I.g)+'"><div class="info-h"><span class="sw"></span>'+I.t+'</div><p>'+I.r+'</p><div class="meta"><span class="tag">Modèle · '+I.m+'</span><span class="tag">Pattern · '+I.p+'</span></div></div>';
+}
+
+/* ---------- Plan global ---------- */
+const PH=6,PW=250,PG=18,X=[],CX=[],NX=[];
+for(let i=0;i<PH;i++){X.push(166+i*(PW+PG));CX.push(166+i*(PW+PG)+125);NX.push(166+i*(PW+PG)+12);}
+const NY=[304,376,448,520,592],NW=226;
+function planSpec(){
+  const P={w:1810,h:1044,panels:[],nodes:[],edges:[]};
+  const pan=o=>P.panels.push(o),nod=o=>P.nodes.push(o),edg=o=>P.edges.push(o);
+  const down=(i,k)=>[[CX[i],NY[k]+52],[CX[i],NY[k+1]]];
+  const up=(i,k)=>[[CX[i],NY[k]],[CX[i],NY[k-1]+52]];
+  const RW=PH*PW+(PH-1)*PG;
+  pan({kind:"lanehead",x:16,y:16,w:130,h:80,t:"HUMAIN",s:"dans la boucle"});
+  pan({kind:"panel",x:166,y:16,w:RW,h:80,g:"human"});
+  pan({kind:"lanehead",x:16,y:692,w:130,h:92,t:"OUTILS",s:"& capteurs"});
+  pan({kind:"panel",x:166,y:692,w:RW,h:92,g:"tools"});
+  pan({kind:"lanehead",x:16,y:814,w:130,h:92,t:"SAVOIR",s:"zoné · à clés"});
+  pan({kind:"panel",x:166,y:814,w:RW,h:92,g:"memory"});
+  pan({kind:"lanehead",x:16,y:936,w:130,h:92,t:"TÉLÉMÉTRIE",s:"& évaluations"});
+  pan({kind:"panel",x:166,y:936,w:RW,h:92,g:"obs"});
+  [["00","AMORCER","boot"],["01","DÉFINIR","define"],["02","PLANIFIER","plan"],["03","CONSTRUIRE","build"],["04","VÉRIFIER","verify"],["05","OPÉRER","operate"]].forEach((a,i)=>pan({kind:"phase",x:X[i],y:262,w:PW,h:400,n:a[0],t:a[1],g:a[2]}));
+
+  [["h0","Lance le projet","objectif, budget, autonomie","user","node"],["h1","Valide cadrage & spec","vraie question, critères","gate","gate"],["h2","Arbitre le plan","architecture, découpage","gate","gate"],["h3","Débloque les escalades","questions ouvertes","gate","gate"],["h4","Approuve le merge","sur dossier de preuves","gate","gate"],["h5","Autorise la release","canari → 100 %","gate","gate"]].forEach((h,i)=>{
+    nod({id:h[0],kind:h[4],x:X[i]+15,y:30,w:220,h:52,t:h[1],s:h[2],icon:h[3],g:"human"});
+    edg({id:"hd"+i,f:i?"control":"intent",pts:[[CX[i]-34,82],[CX[i]-34,126]],a:h[0],b:"orch"});
+    edg({id:"hu"+i,f:"control",dash:true,pts:[[CX[i]+34,126],[CX[i]+34,82]],a:"orch",b:h[0]});
+  });
+  nod({id:"orch",kind:"wide",x:166,y:126,w:RW,h:100,t:"Orchestrateur principal",s:"agent lead · tient le plan, délègue avec des clés atténuées, synthétise, ne code pas",icon:"hub",g:"control",leftW:560,fs:19,sfs:12,chips:["Graphe de tâches (DAG)","Routage des modèles","Budgets & critères d’arrêt","Checkpoints & reprise","Clé atténuée par tâche","Relève de contexte"]});
+  nod({id:"rail",kind:"rail",x:16,y:126,w:130,h:536,t:"PLAN DE\nCONTRÔLE",g:"control",step:56,items:["Courtier de clés\nhors des agents","Zones de savoir\nmontées à la demande","Baux d’écriture\npar chemin","Règle de deux\nentrée · données · action","Secrets\ninjectés, jamais lus","Budgets\ntokens et temps","Approbations\nhumaines","Kill switch\narrêt immédiat"]});
+  edg({id:"r1",f:"control",pts:[[146,176],[166,176]],a:"rail",b:"orch"});
+  edg({id:"r2",f:"control",pts:[[146,440],[166,440]],a:"rail"});
+  const DISP=["boot0","framer","planner","workers","gateq","release"];
+  CX.forEach((x,i)=>{
+    edg({id:"od"+i,f:"task",pts:[[x-30,226],[x-30,262]],a:"orch",b:DISP[i]});
+    edg({id:"ou"+i,f:"context",dash:true,pts:[[x+30,262],[x+30,226]],a:DISP[i],b:"orch"});
+  });
+  const c=(id,i,k,t,s,ic,g,kind)=>nod({id:id,kind:kind,x:NX[i],y:NY[k],w:NW,h:52,t:t,s:s,icon:ic,g:g});
+  c("boot0",0,0,"Initialiseur","froid · squelette, init.sh, état","power","boot");
+  c("boot1",0,1,"Archéologue","froid · si code existant","radar","boot");
+  c("boot2",0,2,"Indexeur de graphe","GitNexus · réindexe au merge","nodes","boot");
+  c("boot3",0,3,"Rituel de reprise","chaud · relit l’état, test de base","play","boot");
+  c("boot4",0,4,"Relève à chaud","handoff quand le contexte sature","relay","boot");
+  c("framer",1,0,"Cadreur","vraie question, hypothèses, oracle","target","define");
+  c("explorer",1,1,"Explorateur","graphe puis lecture ciblée","search","define");
+  c("research",1,2,"Chercheur","sources brutes · session marquée","book","define");
+  c("spec",1,3,"Agent spec","exigences EARS, critères","doc","define");
+  c("archi",1,4,"Architecte","ADR, interfaces, invariants","stack","define");
+  c("planner",2,0,"Planificateur","spec → plan → DAG","graph","plan");
+  c("critic",2,1,"Critique · pré-mortem","hypothèse critique, failles","scales","plan");
+  c("impact",2,2,"Analyse d’impact","graphe · conflits · baux","impact","plan");
+  c("contracts",2,3,"Contrats de sprint","critères testables, négociés","contract","plan");
+  c("testw",2,4,"Auteur de tests","visibles + cachés, en rouge","flask","plan");
+  nod({id:"workers",kind:"stack",x:NX[3],y:304,w:NW,h:268,t:"Implémenteurs",badge:"× N",icon:"code",g:"build",lanes:[["Worker A","feat/auth · bail src/auth/**"],["Worker B","feat/api · bail src/api/**"],["Worker C","feat/ui · bail src/ui/**"],["Worker A′","relève de A · contexte neuf"]]});
+  c("integ",3,4,"Intégrateur","file de merge, suite globale","merge","build");
+  c("gateq",4,0,"Gate qualité","tout vert + dossier de preuves","gate","verify","gate");
+  c("review",4,1,"Panel de revue","sécurité · perf · archi · fiabilité","users","verify");
+  c("evalqa",4,2,"Évaluateur QA","pilote l’app, boîte noire","eye","verify");
+  c("antitriche",4,3,"Garde anti-triche","tests cachés, mutation, diff","shield","verify");
+  c("detv",4,4,"Vérificateur déterministe","CI : build, types, tests, SAST","check","verify");
+  c("release",5,0,"Agent release","PR, changelog, canari","rocket","operate");
+  c("sre",5,1,"Observateur SRE","logs, métriques, alertes","chart","operate");
+  c("analyst",5,2,"Analyste d’échecs","5 pourquoi et 5 pour quoi","tag","operate");
+  c("gardener",5,3,"Jardinier du harness","change la structure, pas le prompt","leaf","operate");
+  c("bg",5,4,"Agents de fond","dette, dépendances, tests instables","loop","operate");
+
+  edg({id:"b01",f:"intent",pts:down(0,0),a:"boot0",b:"boot1"});
+  edg({id:"b12",f:"context",pts:down(0,1),a:"boot1",b:"boot2"});
+  edg({id:"b23",f:"context",pts:down(0,2),a:"boot2",b:"boot3"});
+  edg({id:"b34",f:"context",pts:down(0,3),a:"boot3",b:"boot4"});
+  edg({id:"d01",f:"intent",pts:down(1,0),a:"framer",b:"explorer"});
+  edg({id:"d12",f:"context",pts:down(1,1),a:"explorer",b:"research"});
+  edg({id:"d23",f:"context",pts:down(1,2),a:"research",b:"spec"});
+  edg({id:"d34",f:"intent",pts:down(1,3),a:"spec",b:"archi"});
+  const R1=NX[1]+NW, L2=NX[2], R2=NX[2]+NW, L3=NX[3], R3=NX[3]+NW, L4=NX[4], R4=NX[4]+NW, L5=NX[5], R5=NX[5]+NW;
+  const g12=(X[1]+PW+X[2])/2, g23=(X[2]+PW+X[3])/2;
+  edg({id:"ap",f:"intent",pts:[[R1,618],[g12,618],[g12,330],[L2,330]],a:"archi",b:"planner"});
+  edg({id:"p01",f:"intent",pts:down(2,0),a:"planner",b:"critic"});
+  edg({id:"pr",f:"verify",dash:true,pts:[[R2,402],[R2+9,402],[R2+9,330],[R2,330]],a:"critic",b:"planner"});
+  edg({id:"p12",f:"intent",pts:down(2,1),a:"critic",b:"impact"});
+  edg({id:"p23",f:"intent",pts:down(2,2),a:"impact",b:"contracts"});
+  edg({id:"p34",f:"intent",pts:down(2,3),a:"contracts",b:"testw"});
+  [360,418,474].forEach((y,k)=>edg({id:"cw"+k,f:"task",pts:[[R2,546],[g23,546],[g23,y],[L3,y]],a:"contracts",b:"workers"}));
+  edg({id:"wi",f:"task",pts:[[CX[3],572],[CX[3],592]],a:"workers",b:"integ"});
+  edg({id:"id",f:"task",pts:[[R3,618],[L4,618]],a:"integ",b:"detv"});
+  edg({id:"v1",f:"task",pts:up(4,4),a:"detv",b:"antitriche"});
+  edg({id:"v2",f:"task",pts:up(4,3),a:"antitriche",b:"evalqa"});
+  edg({id:"v3",f:"task",pts:up(4,2),a:"evalqa",b:"review"});
+  edg({id:"v4",f:"task",pts:up(4,1),a:"review",b:"gateq"});
+  const gm=(R3+L4)/2;
+  edg({id:"rj0",f:"verify",dash:true,pts:[[L4,546],[R3,546]],a:"antitriche",b:"workers",label:{t:"rejet",x:gm,y:539}});
+  edg({id:"rj1",f:"verify",dash:true,pts:[[L4,474],[R3,474]],a:"evalqa",b:"workers",label:{t:"rejet",x:gm,y:467}});
+  edg({id:"rj2",f:"verify",dash:true,pts:[[L4,402],[R3,402]],a:"review",b:"workers",label:{t:"rejet",x:gm,y:395}});
+  edg({id:"gr",f:"task",pts:[[R4,330],[L5,330]],a:"gateq",b:"release"});
+  edg({id:"o01",f:"task",pts:down(5,0),a:"release",b:"sre"});
+  edg({id:"o12",f:"learn",pts:down(5,1),a:"sre",b:"analyst"});
+  edg({id:"o23",f:"learn",pts:down(5,2),a:"analyst",b:"gardener"});
+  edg({id:"o34",f:"learn",pts:down(5,3),a:"gardener",b:"bg"});
+  const RE=166+RW;
+  edg({id:"so",f:"learn",pts:[[R5,402],[R5+26,402],[R5+26,176],[RE,176]],a:"sre",b:"orch",label:{t:"incidents → tâches",x:R5+26,y:290,rot:-90}});
+
+  const TL=[[["t0a","Init & conteneurs","devcontainer · init.sh"],["t0b","GitNexus","graphe · impact · flux"]],
+    [["t1a","Recherche code","grep · LSP"],["t1b","MCP docs & web","zone externe, marquée"]],
+    [["t2a","Skills","SKILL.md à la demande"],["t2b","Tests d’acceptation","lecture seule workers"]],
+    [["t3a","Sandbox","worktree + conteneur"],["t3b","Capteurs rapides","typage · lint · tests"]],
+    [["t4a","Navigateur","Playwright · DevTools"],["t4b","Mutation & SAST","qualité des tests"]],
+    [["t5a","CI/CD · flags","canari · rollback"],["t5b","A2A","agents externes"]]];
+  const TF=["context","context","intent","task","verify","task"];
+  const TA=[["boot0","boot2"],["explorer","research"],["planner","testw"],["workers","workers"],["evalqa","antitriche"],["release","release"]];
+  TL.forEach((pair,i)=>pair.forEach((t,j)=>{const x=X[i]+(j?130:8);nod({id:t[0],kind:"tool",x:x,y:712,w:112,h:52,t:t[1],s:t[2],g:"tools"});edg({id:"tc"+t[0],f:TF[i],bi:true,pts:[[x+56,662],[x+56,712]],a:TA[i][j],b:t[0]});}));
+
+  const ML=[[["z00","Graphe de code","Z1 · index GitNexus"],["z01","Journal & relèves","Z5 · progress, handoffs"]],
+    [["z10","Docs & ADR","Z0 · indexés, statut"],["z11","Cadrage","Z2 · framing.md"]],
+    [["z20","Spec · plan · tâches","Z2 · source de vérité"],["z21","Contrats & schémas","ports versionnés"]],
+    [["z30","Code source","Z1 · écriture par bail"],["z31","Tests visibles","Z3 · lecture seule"]],
+    [["z40","Tests cachés","Z4 · évaluateur seul"],["z41","Registre","Z6 · feature_list.json"]],
+    [["z50","Mémoire épisodique","leçons des runs"],["z51","AGENTS.md & politiques","Z0 · Z7 · via PR"]]];
+  const MA=[["boot2","boot3"],["archi","framer"],["planner","contracts"],["workers","workers"],["evalqa","evalqa"],["gardener","gardener"]];
+  ML.forEach((pair,i)=>pair.forEach((m,j)=>{const x=X[i]+(j?130:8);nod({id:m[0],kind:"tool",x:x,y:834,w:112,h:52,t:m[1],s:m[2],g:"memory"});edg({id:"mc"+i+j,f:i===5?"learn":"context",bi:i!==5,pts:[[CX[i],662],[CX[i],800],[x+56,800],[x+56,834]],a:MA[i][j],b:m[0]});}));
+
+  const OW=(RW-20-48)/5;
+  [["o0","Traces OTel","chaque appel, chaque relève","eye"],["o1","Coût · tokens · latence","par agent, tâche, modèle","coin"],["o2","Evals du harness","suite de régression","flask"],["o3","Journal d’audit","clés émises, accès, refus","lock"],["o4","Taxonomie d’échecs","spec · coordination · vérif","tag"]].forEach((o,i)=>nod({id:o[0],x:176+i*(OW+12),y:956,w:OW,h:52,t:o[1],s:o[2],icon:o[3],g:"obs"}));
+  const gx=(X[0]+PW+X[1])/2;
+  edg({id:"tel",f:"control",pts:[[gx,662],[gx,956]],b:"o0",label:{t:"traces",x:gx,y:925}});
+  const o4x=176+4*(OW+12), z50c=X[5]+8+56;
+  edg({id:"om",f:"learn",pts:[[z50c,956],[z50c,886]],a:"o4",b:"z50",label:{t:"leçons",x:z50c,y:925}});
+  edg({id:"og",f:"learn",pts:[[o4x+OW,982],[RE+36,982],[RE+36,474],[R5,474]],a:"o4",b:"analyst",label:{t:"échecs classés",x:RE+36,y:720,rot:-90}});
+  return P;
+}
+
+const STEPS=[
+ {t:"Lancement",d:"Le tech lead fixe l’objectif, le budget et le niveau d’autonomie. Le courtier émet la clé racine de la mission. L’orchestrateur ouvre le graphe de tâches et commence par l’amorçage.",e:["hd0","od0","r1"],n:["h0","orch","rail","boot0"]},
+ {t:"Bootstrap froid",d:"Une seule fois par projet. L’initialiseur pose le squelette et l’état. Si le code existe déjà, l’archéologue écrit des tests de caractérisation ; l’indexeur construit le graphe de code, un index par zone.",e:["b01","b12","tct0a","tct0b","mc00","mc01","ou0"],n:["boot0","boot1","boot2","t0a","t0b","z00","z01","orch"]},
+ {t:"Cadrage",d:"Le cadreur remonte de la demande à la vraie question, nomme l’hypothèse critique et l’oracle externe. L’explorateur interroge le graphe ; le chercheur lit les sources brutes dans une session marquée non fiable.",e:["od1","d01","d12","tct1a","tct1b","mc11"],n:["orch","framer","explorer","research","t1a","t1b","z11"]},
+ {t:"Spec et validation",d:"L’agent spec écrit des critères vérifiables, l’architecte fixe interfaces et invariants. Le tout part en validation humaine : c’est là qu’une heure humaine pèse le plus.",e:["d23","d34","mc10","ou1","hu1","hd1"],n:["research","spec","archi","z10","orch","h1"]},
+ {t:"Plan adversarial et impact",d:"Le planificateur découpe en DAG, la critique mène un pré-mortem. L’analyse d’impact interroge le graphe : deux tâches sur le même cluster sont sérialisées, et le rayon d’impact devient le bail d’écriture.",e:["ap","p01","pr","p12","p23","mc20","mc21","hu2","hd2"],n:["archi","planner","critic","impact","contracts","z20","z21","h2","orch"]},
+ {t:"Tests en rouge",d:"L’auteur de tests écrit un jeu visible et un jeu caché. Les workers pourront lancer le premier, jamais le modifier. Le second ne sera monté que pour l’évaluateur.",e:["p34","tct2a","tct2b"],n:["contracts","testw","t2a","t2b"]},
+ {t:"Construction isolée",d:"Chaque worker reçoit une tâche et une clé atténuée : son worktree, son bail, pas de réseau. Quand un contexte sature, la relève à chaud passe le travail à un worker neuf (A′). Chacun rend un résumé typé, et l’intégrateur rend l’état d’intégration.",e:["od3","cw0","cw1","cw2","tct3a","tct3b","mc30","mc31","wi","ou3","b34"],n:["orch","contracts","workers","t3a","t3b","z30","z31","integ","boot3","boot4"]},
+ {t:"Vérification en couches",d:"Du moins cher au plus cher : CI, garde anti-triche (tests cachés, mutation, diff des tests), évaluateur en boîte noire, panel de revue. Seul l’évaluateur bascule le registre. Chaque rejet repart chez un worker avec ses preuves.",e:["id","v1","v2","v3","v4","rj0","rj1","rj2","tct4a","tct4b","mc40","mc41"],n:["integ","detv","antitriche","evalqa","review","gateq","workers","t4a","t4b","z40","z41"]},
+ {t:"Merge et livraison",d:"La gate exige tout vert et un dossier de preuves. L’humain approuve le merge sur ce dossier, puis la release part derrière un flag, en canari.",e:["hu4","hd4","gr","hu5","hd5","o01","tct5a"],n:["h4","h5","orch","gateq","release","sre","t5a"]},
+ {t:"Boucle d’apprentissage",d:"Les incidents redeviennent des tâches. L’analyste remonte cinq pourquoi et cinq pour quoi pour trouver la dynamique en cause. Le jardinier corrige la structure (permission, test, contrat) plutôt que le prompt.",e:["so","o12","o23","o34","og","om","tel","mc50","mc51"],n:["sre","orch","analyst","gardener","bg","o0","o4","z50","z51"]}
+];
+
+/* ---------- Clés ---------- */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function iconSVG(name){return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="'+ICONS[name]+'"/></svg>';}
+
+/* ---------- Matrice ---------- */
+function planSpec3(){
+  const P=planSpec(), RW=PH*PW+(PH-1)*PG, RE=166+RW;
+  const N=id=>P.nodes.find(n=>n.id===id);
+  P.y0=-84;P.h=1044+84;
+  P.panels.push({kind:"lanehead",x:16,y:-72,w:130,h:58,t:"COCKPIT",s:"pilotage humain"});
+  P.nodes.push({id:"cockpit",kind:"wide",x:166,y:-74,w:RW,h:58,t:"Cockpit",s:"lit les artefacts, n’en crée aucun",icon:"monitor",g:"human",leftW:430,chipRows:1,chipH:28,chipFs:11,chips:["File de décisions par risque","Dossiers de preuves","Vue de flotte","Replay de traces","Pause · arrêt · réaffecter","Approbation mobile"]});
+  CX.forEach((x,i)=>P.edges.push({id:"cp"+i,f:"intent",bi:true,pts:[[x,-16],[x,30]],a:"cockpit",b:"h"+i}));
+  Object.assign(N("rail"),{step:46,items:["Courtier de clés\nhors des agents","Zones de savoir\nmontées à la demande","Baux d’écriture\npar chemin","Règle de deux\nentrée · données · action","Secrets\ninjectés, jamais lus","Budgets\ntokens et temps","Approbations\nhumaines","Kill switch\narrêt immédiat","Exécution durable\nreprise après panne","Provenance\ncommits signés"]});
+  Object.assign(N("orch"),{t:"Orchestrateur de mission",s:"un par mission · M missions en parallèle via l’ordonnanceur de flotte · ne code pas",chips:["DAG dynamique","Routage appris","Budgets & critères d’arrêt","Exécution durable","Clé atténuée par tâche","Best-of-N sur nœuds durs"]});
+  N("boot2").s="graphe statique + chemins exécutés";
+  N("impact").s="graphe · conflits · baux · risque";
+  N("review").s="boucle jusqu’à accord";
+  N("evalqa").s="boîte noire · tests adverses";
+  Object.assign(N("gateq"),{t:"Gate qualité graduée",s:"auto-merge si réversible"});
+  N("workers").lanes[1]=["Worker B ×3","nœud dur : best-of-3"];
+  N("t3a").s="microVM · instantanés";
+  N("t3b").s="tests choisis par impact";
+  N("t5b").s="agent cards Fonderie";
+  N("z00").s="Z1 · statique + dynamique";
+  N("z50").s="leçons vérifiées";
+  const tl=P.panels.find(p=>p.t==="TÉLÉMÉTRIE");if(tl)tl.s="évals · optimisation";
+  P.nodes=P.nodes.filter(n=>!/^o\d$/.test(n.id));
+  P.edges=P.edges.filter(e=>["tel","om","og"].indexOf(e.id)<0);
+  [["o0","Traces et replay","propagées entre agents","eye"],["o1","Coût et SLO","par mission, alertes","coin"],["o2","Journal d’audit chaîné","commits signés","lock"],["o3","Banc d’essai","historique, bugs, ombre","flask"],["o4","Optimiseur de harness","split caché fermé","radar"],["o5","Taxonomie d’échecs","spec · coordination · vérif","tag"]].forEach((o,i)=>P.nodes.push({id:o[0],x:X[i]+8,y:956,w:234,h:52,t:o[1],s:o[2],icon:o[3],g:"obs"}));
+  const gx=(X[0]+PW+X[1])/2, z50c=X[5]+8+56;
+  P.edges.push({id:"tel",f:"control",pts:[[gx,662],[gx,920],[CX[0],920],[CX[0],956]],b:"o0",label:{t:"traces",x:(gx+CX[0])/2,y:916}});
+  P.edges.push({id:"om",f:"learn",pts:[[z50c,956],[z50c,886]],a:"o5",b:"z50",label:{t:"leçons",x:z50c,y:925}});
+  P.edges.push({id:"og",f:"learn",pts:[[X[5]+242,982],[RE+36,982],[RE+36,474],[NX[5]+NW,474]],a:"o5",b:"analyst",label:{t:"échecs classés",x:RE+36,y:720,rot:-90}});
+  P.edges.push({id:"tx",f:"learn",pts:[[X[5]+8,982],[X[4]+242,982]],a:"o5",b:"o4"});
+  P.edges.push({id:"bo",f:"learn",bi:true,pts:[[X[3]+242,982],[X[4]+8,982]],a:"o3",b:"o4"});
+  return P;
+}
+STEPS.length=0;
+STEPS.push(
+ {t:"Lancement",d:"Le tech lead lance la mission depuis le cockpit : objectif, budget, niveau d’autonomie. L’ordonnanceur de flotte lui attribue un orchestrateur, le courtier émet la clé racine, et l’orchestrateur ouvre le DAG par l’amorçage.",e:["cp0","hd0","od0","r1"],n:["cockpit","h0","orch","rail","boot0"]},
+ {t:"Bootstrap froid",d:"Une seule fois par projet. L’initialiseur pose le squelette et l’état. Si le code existe déjà, l’archéologue écrit des tests de caractérisation ; l’indexeur construit le graphe, statique puis enrichi des chemins exécutés.",e:["b01","b12","tct0a","tct0b","mc00","mc01","ou0"],n:["boot0","boot1","boot2","t0a","t0b","z00","z01","orch"]},
+ {t:"Cadrage",d:"Le cadreur remonte de la demande à la vraie question, nomme l’hypothèse critique et l’oracle externe. L’explorateur interroge le graphe en recherche hybride ; le chercheur lit les sources brutes dans une session marquée non fiable.",e:["od1","d01","d12","tct1a","tct1b","mc11"],n:["orch","framer","explorer","research","t1a","t1b","z11"]},
+ {t:"Spec et validation",d:"L’agent spec écrit des critères vérifiables, l’architecte fixe interfaces et invariants. Le dossier part en validation dans le cockpit, la vraie question en tête.",e:["d23","d34","mc10","ou1","hu1","hd1","cp1"],n:["research","spec","archi","z10","orch","h1","cockpit"]},
+ {t:"Plan adversarial et impact",d:"Le planificateur découpe en DAG, la critique mène un pré-mortem. L’analyse d’impact sérialise les tâches d’un même cluster, fixe les baux et calcule un score de risque par tâche.",e:["ap","p01","pr","p12","p23","mc20","mc21","hu2","hd2","cp2"],n:["archi","planner","critic","impact","contracts","z20","z21","h2","orch","cockpit"]},
+ {t:"Tests en rouge",d:"L’auteur de tests écrit un jeu visible et un jeu caché. Les workers pourront lancer le premier, jamais le modifier. Le second ne sera monté que pour l’évaluateur et le banc.",e:["p34","tct2a","tct2b"],n:["contracts","testw","t2a","t2b"]},
+ {t:"Construction isolée",d:"Chaque worker reçoit une tâche et une clé atténuée dans son sandbox. Sur le nœud dur, trois tentatives tournent en parallèle (B ×3). Quand un contexte sature, la relève passe le travail à un worker neuf (A′). Chacun rend un résumé typé, l’intégrateur rend l’état d’intégration.",e:["od3","cw0","cw1","cw2","tct3a","tct3b","mc30","mc31","wi","ou3","b34"],n:["orch","contracts","workers","t3a","t3b","z30","z31","integ","boot3","boot4"]},
+ {t:"Vérification en couches",d:"CI avec tests choisis par impact, garde anti-triche, évaluateur multimodal en boîte noire, revue en boucle jusqu’à accord avec constats reproduits. Seul l’évaluateur bascule le registre ; chaque rejet repart chez un worker avec ses preuves.",e:["id","v1","v2","v3","v4","rj0","rj1","rj2","tct4a","tct4b","mc40","mc41"],n:["integ","detv","antitriche","evalqa","review","gateq","workers","t4a","t4b","z40","z41"]},
+ {t:"Merge et livraison",d:"La gate est graduée par le rayon d’impact : un changement réversible, à faible impact et tout vert est mergé seul. Le reste arrive dans le cockpit avec son dossier de preuves. La release part derrière un flag, en canari.",e:["gr","o01","tct5a","hu4","hd4","cp4","hu5","hd5","cp5"],n:["gateq","release","sre","t5a","h4","h5","orch","cockpit"]},
+ {t:"Boucle d’apprentissage",d:"Les incidents redeviennent des tâches. L’analyste remonte cinq pourquoi et cinq pour quoi ; le jardinier corrige la structure et valide chaque correction sur le banc avant sa PR.",e:["so","o12","o23","o34","og","tel","mc50","mc51"],n:["sre","orch","analyst","gardener","bg","o0","o5","z50","z51"]},
+ {t:"Banc d’essai et optimisation",d:"Le banc rejoue l’historique, injecte des bugs et compare les variantes, en mode ombre sur le trafic réel. L’optimiseur cherche de meilleures configurations à partir des fiches d’échec ; seules celles que confirme le split caché sont proposées, par PR approuvée.",e:["tx","bo","om"],n:["o3","o4","o5","z50","gardener"]}
+);
+
+
+const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let PLAYING=!reduce, SPEED=1, last=performance.now();
+const root=document.documentElement;
+const playBtn=document.getElementById("playBtn");
+function setPlaying(v){
+  PLAYING=v;root.classList.toggle("playing",v);
+  playBtn.innerHTML=v?'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1h3v10H2zM7 1h3v10H7z"/></svg>Pause':'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1l9 5-9 5z"/></svg>Animer';
+  playBtn.setAttribute("aria-label",v?"Mettre les animations en pause":"Lancer les animations");
+}
+playBtn.addEventListener("click",()=>setPlaying(!PLAYING));
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(PLAYING){for(const d of DIAGS){if(d.visible)d.tick(dt*SPEED);}}requestAnimationFrame(loop);}
+
+/* ---------- Construction ---------- */
+document.querySelectorAll("svg[data-i]").forEach(s=>{S("path",{d:ICONS[s.dataset.i]},s);});
+const FLOWS=[["intent","Intention & spec"],["task","Tâches & code"],["verify","Vérification & rejets",1],["context","Contexte & savoir",1],["control","Contrôle & clés"],["learn","Apprentissage du harness"]];
+
+const planSvg=document.getElementById("planSvg");
+const nodePanel=document.getElementById("nodePanel"),stepPanel=document.getElementById("stepPanel");
+const plan=new Diagram(planSvg,planSpec3(),{onNode:key=>{nodePanel.innerHTML='<div class="k">Bloc sélectionné</div>'+infoHTML(key);}});
+plan.select("workers");nodePanel.innerHTML='<div class="k">Bloc sélectionné</div>'+infoHTML("workers");
+
+const planLegend=document.getElementById("planLegend");
+planLegend.innerHTML='<span class="k" style="margin-right:4px">Isoler un flux</span>'+FLOWS.map(f=>'<button type="button" class="lg'+(f[2]?" dash":"")+'" data-f="'+f[0]+'" aria-pressed="false" style="--fc:var(--f-'+f[0]+')"><i></i>'+f[1]+'</button>').join("");
+const activeFlows=new Set();
+let curStep=-1, autoTimer=null;
+const dotsEl=document.getElementById("dots");
+dotsEl.innerHTML=STEPS.map((s,i)=>'<button type="button" class="dot" data-i="'+i+'" aria-label="Étape '+(i+1)+' : '+esc(s.t)+'">'+(i+1)+'</button>').join("");
+function renderIntro(){stepPanel.innerHTML='<div class="k">Scénario · '+STEPS.length+' étapes</div><p class="step-t"><span>0</span>Vue complète</p><p>Tous les flux sont actifs. Lancez le scénario avec ▶ ou « Dérouler » pour suivre une fonctionnalité de l’amorçage jusqu’à la boucle d’apprentissage.</p>';}
+function syncLegend(){planLegend.querySelectorAll("button.lg").forEach(b=>b.setAttribute("aria-pressed",activeFlows.has(b.dataset.f)?"true":"false"));}
+function showStep(i){
+  curStep=i;activeFlows.clear();syncLegend();
+  dotsEl.querySelectorAll(".dot").forEach((d,k)=>{if(k===i)d.setAttribute("aria-current","step");else d.removeAttribute("aria-current");});
+  if(i<0){plan.focus(null);renderIntro();return;}
+  const s=STEPS[i];plan.focus({edges:s.e,nodes:s.n});
+  stepPanel.innerHTML='<div class="k">Étape '+(i+1)+' / '+STEPS.length+'</div><p class="step-t"><span>'+(i+1)+'</span>'+esc(s.t)+'</p><p>'+esc(s.d)+'</p>';
+}
+planLegend.addEventListener("click",ev=>{
+  const b=ev.target.closest("button.lg");if(!b)return;stopAuto();
+  const f=b.dataset.f;if(activeFlows.has(f))activeFlows.delete(f);else activeFlows.add(f);
+  curStep=-1;dotsEl.querySelectorAll(".dot").forEach(d=>d.removeAttribute("aria-current"));
+  syncLegend();
+  if(activeFlows.size){plan.focus({flows:activeFlows});stepPanel.innerHTML='<div class="k">Filtre actif</div><p class="step-t">'+[...activeFlows].map(k=>FLOWS.find(x=>x[0]===k)[1]).join(" · ")+'</p><p>Seuls ces flux et les blocs qu’ils relient restent visibles. Cliquez à nouveau sur un flux pour le retirer.</p>';}
+  else{plan.focus(null);renderIntro();}
+});
+dotsEl.addEventListener("click",ev=>{const d=ev.target.closest(".dot");if(!d)return;stopAuto();showStep(+d.dataset.i);});
+document.getElementById("prevStep").addEventListener("click",()=>{stopAuto();showStep(curStep<=0?STEPS.length-1:curStep-1);});
+document.getElementById("nextStep").addEventListener("click",()=>{stopAuto();showStep(curStep>=STEPS.length-1?0:curStep+1);});
+document.getElementById("allStep").addEventListener("click",()=>{stopAuto();showStep(-1);});
+const autoBtn=document.getElementById("autoStep");
+function stopAuto(){if(autoTimer){clearInterval(autoTimer);autoTimer=null;}autoBtn.setAttribute("aria-pressed","false");}
+autoBtn.addEventListener("click",()=>{
+  if(autoTimer){stopAuto();return;}
+  autoBtn.setAttribute("aria-pressed","true");
+  if(!PLAYING)setPlaying(true);
+  showStep(curStep>=STEPS.length-1?0:curStep+1);
+  autoTimer=setInterval(()=>showStep(curStep>=STEPS.length-1?0:curStep+1),6500);
+});
+renderIntro();
+
+document.querySelectorAll(".sp").forEach(b=>b.addEventListener("click",()=>{SPEED=+b.dataset.s;document.querySelectorAll(".sp").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));}));
+const ZOOMS=[1,1.35,1.75,2.25];let zi=0;
+const zoomVal=document.getElementById("zoomVal");
+function applyZoom(){const z=ZOOMS[zi];planSvg.style.width=(z*100)+"%";planSvg.style.minWidth=Math.round(1240*z)+"px";zoomVal.textContent=Math.round(z*100)+" %";}
+document.getElementById("zoomIn").addEventListener("click",()=>{if(zi<ZOOMS.length-1){zi++;applyZoom();}});
+document.getElementById("zoomOut").addEventListener("click",()=>{if(zi>0){zi--;applyZoom();}});
+const fsBtn=document.getElementById("fsBtn"),planSheet=document.getElementById("planSheet");
+if(!(document.fullscreenEnabled&&planSheet.requestFullscreen)){fsBtn.hidden=true;}
+else{fsBtn.addEventListener("click",()=>{if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}else{planSheet.requestFullscreen().catch(()=>{fsBtn.hidden=true;});}});
+  document.addEventListener("fullscreenchange",()=>{fsBtn.textContent=document.fullscreenElement?"Quitter":"Plein écran";});}
+
+if("IntersectionObserver" in window){
+  const io=new IntersectionObserver(ents=>ents.forEach(en=>{if(en.target.__dg)en.target.__dg.visible=en.isIntersecting;}),{rootMargin:"120px"});
+  DIAGS.forEach(d=>{d.visible=false;io.observe(d.svg);});
+}
+const refit=()=>DIAGS.forEach(d=>fitAll(d.svg));
+refit();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(refit);
+setPlaying(PLAYING);
+requestAnimationFrame(loop);
+})();
+</script>
+<script id="suivi-data" type="application/json">{"target": "Blueprint Fonderie, révision 3: seize pièces, phases 0 à 6", "evaluated": "2026-11-10 07:48", "generated": "2026-11-17 16:19", "head": "", "concepts": {"antitriche": {"t": "Garde anti-triche", "pct": 70, "fait": ["tests cachés, contrôle de réalité (worktree, transcript), critères rejoués, garde du registre", "tests de mutation mesurés sur deux modules (D8)", "contrôles du test-writer (chemins fixes, données non lues); canari tourné; tests cachés et objets git absents de la boîte", "tests déclarés rapprochés d'une vraie commande; données lues par le code; rouge pour la bonne raison", "reçu de tentative: ce que le contrôleur a constaté, séparé de ce que le modèle déclare (spec 026)"], "reste": ["candidat figé avant fusion, gate sur une branche d'intégration, promotion comparée", "tests de mutation dans la gate", "diff des tests d'acceptation par Bash détecté avant coup"], "preuves": [], "id": "antitriche"}, "bg": {"t": "Agents de fond", "pct": 0, "fait": [], "reste": ["dette, dépendances, tests instables"], "preuves": [], "id": "bg"}, "boot-cold": {"t": "Amorçage froid", "pct": 15, "fait": ["make setup, fonderie build, doctor"], "reste": ["initialiseur de projet", "archéologue pour un code existant", "indexeur de graphe"], "preuves": [], "id": "boot-cold"}, "boot-handoff": {"t": "Relève à chaud", "pct": 20, "fait": ["relèves typées handoff@1, relève de l'orchestrateur"], "reste": ["déclenchement automatique quand le contexte sature"], "preuves": [], "id": "boot-handoff"}, "boot-warm": {"t": "Rituel de reprise", "pct": 84, "fait": ["SessionStart injecte mode, journal, registre, relèves ouvertes", "bootstrap réduit pour les rôles délégués, relèves ouvertes plafonnées (proposition 025)", "fonderie reprendre: état après une coupure (contrat, démarrages avec coupures brutales et segfaults, serveur de modèles, processus, bancs incomplets avec leur commande de reprise, runs abandonnés), et", "reprise exercée en vrai aux coupures de 07:53 et de 15:11: relève d'orchestrateur lue par le hook, banc B2 puis banc témoin repris avec leurs étiquettes"], "reste": ["pourcentage estimé par l'orchestrateur, sans barème à ancrages ni scénario de preuve (audit R5, D06); à ancrer ou à faire arbitrer par l'humain", "test de base relancé à chaque reprise", "banc lancer --reprendre n'a pas encore servi sur un banc réel coupé (le témoin tourne sur l'ancien code)"], "preuves": [], "id": "boot-warm"}, "detv": {"t": "Vérificateur déterministe", "pct": 42, "fait": ["make check local avant toute fusion", "task@3: code exact appliqué et vérifié sans modèle", "contrat n° 26: porte de preuve, vérificateur de reproduction rejoué sur le code d'origine puis sur la correction, éprouvé en boîte réelle (6 sur 6), en bras d'essai, non adopté"], "reste": ["CI: build, types, tests, SAST hors machine"], "preuves": [], "id": "detv"}, "gate": {"t": "Gate et merge", "pct": 35, "fait": ["fusion --no-ff après make check sur la branche et critères rejoués", "garde du registre"], "reste": ["gate graduée par le risque, auto-merge si réversible", "dossier de preuves pour l'humain"], "preuves": [], "id": "gate"}, "human": {"t": "Humain et décisions", "pct": 45, "fait": ["décisions groupées avant la nuit, contrat écrit, douze points à trancher listés", "constitution modifiée seulement par branche de proposition"], "reste": ["décisions prises depuis un cockpit sur dossier de preuves", "gates limitées à l'irréversible"], "preuves": [], "id": "human"}, "impact": {"t": "Analyse d'impact", "pct": 5, "fait": ["baux disjoints"], "reste": ["graphe, conflits, risque par tâche"], "preuves": [], "id": "impact"}, "m13": {"t": "13 · Cockpit", "pct": 75, "fait": ["cette page de suivi régénérée depuis le dépôt", "bilan du contrat de nuit et relève de l'orchestrateur", "récit en direct des runs dans le terminal (fonderie events --suivre), socle des quatre vues", "vue exécutive: fonderie cockpit sur, graphe des fichiers qui naît sous les yeux, avatars et faisceaux, récit, clés actives, replay, arrêt et relance à jeton", "plan vivant: /plan anime le plan global haute résolution du blueprint, blocs actifs et flux colorés à l'instant T", "cockpit local, les quatre pages des maquettes: vue exécutive, plan vivant, chunks, savoirs 2D et 3D"], "reste": ["décisions et approbations depuis le cockpit", "notifications vers le téléphone", "vue de flotte multi-missions"], "preuves": [], "id": "m13"}, "m14": {"t": "14 · Banc d'essai", "pct": 90, "fait": ["23 tâches de référence rejouables et lanceur", "base locale 14/20, variance sur trois essais, comparaison de cinq modèles", "banc complet k=3: 50/69 essais, 19 tâches pass@3, 15 pass^3; rapport par rôle et palier (make banc)", "29 tâches de référence, dont six tirées des incidents réels ( à )", "banc complet k=3 rejoué (C7: 87 essais) et comparé à N6", "panel de deux juges (C8)", "banc ciblé D6: l'extrait d'interface fait tenir son périmètre au worker 3 fois sur 3 ( contre )", "banc complet k=3 rejoué (D10): 55/90, agrégats identiques à C7 sur les deux paliers; une voie en frontier divise les médianes", "grand banc k=5 (F3: 155 essais, 89 réussis) analysé contre D10: réussites inchangées, refus par run de 2,96 à 2,34", "banc apparié boîte contre hôte (F5: 40 essais, 38 réussis)", "contrat n° 7: essais attribuables (paire, répétition, commit, empreinte, modèle), issue attendue par tâche, fonderie banc lancer", "bancs appariés de la boîte: g1-verif-boite, montages-boite-3, f10-boite-large (24 essais), boite-large-18 (72 essais)", "artefact du banc analysé: défaut de dispatch trouvé et corrigé", "refus voulus à part, motif des artefacts, fumée après correctifs; fixture trois fois plus rapide", "manifeste du serveur (version, empreinte du modèle) dans chaque essai; tâches et tirées d'un incident, bancs ciblés code contre raisonnement", "transport des relèves mesuré (44 essais) et appels d'outil écrits en texte quantifiés (environ la moitié des résultats de qwen3-coder)", "banc de nuit H5 (47 essais) analysé avec le journal du serveur: deux défauts du harness trouvés et corrigés", "banc final-defaut: 31 essais de code verts sur 36 (86 %) au palier raisonnement par défaut, contre 13 sur 36 au coder", "boucle remède (L2): fonderie remede verdict (keep, revert, inconclusive, avec la puissance, en mode apparié ou par rejeu) et banc informatives; premier verdict réel sur le rejeu de 186 runs, 15 paires contre 0, p = 0,0001", "banc lancer --reprendre et manifeste d'expérience; a repris à la main un banc de l'ancien code coupé à 15 essais sur 36", "bancs de non-régression B1, B2, B3 (32, 32, 28 verts sur 36) et témoin de l'ancien code (30 sur 36): le recul de B3 est du bruit selon la règle écrite d'avance", "fonderie banc suspects: les essais qui recouvrent un segfault du noyau", "banc réel coupé par la machine puis repris par banc lancer --reprendre, aucun essai perdu au final (L3c, 2026-10-28)", "banc LatentMAS préenregistré hors Ollama (transformers, 240 essais): efficience reproduite, aucun apport sur un texte plafonné", "banc B1 (retrait de tidy): 21/28 contre 21/28, inconclusif; le calcul de puissance est écrit avec le résultat (28 paires donnent ±18,6 points, environ 97 paires pour une marge de 10, soit 15 h de GPU)", "plafond de sortie jugé par un rejeu de 454 transcripts (3 runs acceptés sur 301 dépassent 8 192 en estimation) au lieu d'un banc de 3,1 h pour ±22 points", "contrat n° 26: rejeu sans GPU de 1 670 passages en boîte sur 610 correctifs enregistrés, règle écrite avant, verdict non départagé pour la sélection par tests croisés (+2,4 points à k = 3, sous le seuil de 4)"], "reste": ["pourcentage estimé par l'orchestrateur, sans barème à ancrages ni scénario de preuve (audit R5, D06); à ancrer ou à faire arbitrer par l'humain", "cinquante tâches et coûts par essai", "bancs ciblés pour chaque changement du harness (le banc complet ne départage plus un petit écart)", "banc externe (SWE-sweep) en fin de projet"], "preuves": [], "id": "m14"}, "m15": {"t": "15 · Optimiseur", "pct": 25, "fait": ["boucle remède mesurée (L2): fonderie remede verdict décide keep, revert ou inconclusive avec la puissance du banc et l'enregistre au registre de décisions (relève à la source, keep)", "fonderie rejeu: variantes déclarées dans un fichier, rejouées sur les sorties enregistrées, verdict apparié et meilleure variante (spec 047)", "premier passage: la marge de l'analyseur est de 2 à 5 relèves sur 128; les pertes sont en amont (sorties coupées, relèves absentes)"], "reste": ["pourcentage estimé par l'orchestrateur, sans barème à ancrages ni scénario de preuve (audit R5, D06); à ancrer ou à faire arbitrer par l'humain", "DSPy (GEPA) sur les prompts de rôles, l'eval lab comme fonction objectif", "tests cachés comme garde-fou contre la sur-optimisation"], "preuves": [], "id": "m15"}, "o-audit": {"t": "Journal d'audit chaîné", "pct": 22, "fait": ["journal et historique git", "reçu par tentative, vérifiable contre l'arbre du worktree (receipt@1)"], "reste": ["commits signés, audit des accès et refus"], "preuves": [], "id": "o-audit"}, "o-cost": {"t": "Coût et SLO", "pct": 30, "fait": ["durée de chaque rejeu mesurée", "coûts par run, rôle et modèle: jetons, temps d'API, équivalent cloud, refus; fonderie couts, page /couts"], "reste": ["coût par mission et par PR, SLO et alertes"], "preuves": [], "id": "o-cost"}, "o-taxonomy": {"t": "Taxonomie d'échecs", "pct": 60, "fait": ["catégorie MAST sur chaque fiche"], "reste": ["tableau des catégories par rôle et par palier"], "preuves": [], "id": "o-taxonomy"}, "o-traces": {"t": "Traces et replay", "pct": 25, "fait": ["transcripts de run et script de rejeu"], "reste": ["traces propagées entre agents (OTel)"], "preuves": [], "id": "o-traces"}, "release": {"t": "Release", "pct": 0, "fait": [], "reste": ["PR, changelog, canari"], "preuves": [], "id": "release"}, "role-analyst": {"t": "Analyste d'échecs", "auto": "role", "role": "analyst", "pct": 67, "fait": ["2/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (2/3 aujourd'hui)"], "note": "2/3 essais", "preuves": [], "id": "role-analyst"}, "role-architect": {"t": "Architecte", "auto": "role", "role": "architect", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-architect"}, "role-critic": {"t": "Critique", "auto": "role", "role": "critic", "pct": 33, "fait": ["1/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (1/3 aujourd'hui)"], "note": "1/3 essais", "preuves": [], "id": "role-critic"}, "role-evaluator": {"t": "Évaluateur", "auto": "role", "role": "evaluator", "pct": 75, "fait": ["2/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (9/12 aujourd'hui)"], "note": "9/12 essais", "preuves": [], "id": "role-evaluator"}, "role-explorer": {"t": "Explorateur", "auto": "role", "role": "explorer", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-explorer"}, "role-framer": {"t": "Cadreur", "auto": "role", "role": "framer", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-framer"}, "role-gardener": {"t": "Jardinier", "auto": "role", "role": "gardener", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-gardener"}, "role-integrator": {"t": "Intégrateur", "auto": "role", "role": "integrator", "pct": 0, "fait": ["0/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (0/3 aujourd'hui)"], "note": "0/3 essais", "preuves": [], "id": "role-integrator"}, "role-orchestrator": {"t": "Orchestrateur", "pct": 78, "fait": ["tient le plan, délègue en local, vérifie avant de fusionner, escalade", "contrat de nuit, relève de session, bilan"], "reste": ["orchestrateur Opus en mode cloud, plusieurs missions", "moins d'interventions manuelles (relectures automatisées)"], "preuves": [], "id": "role-orchestrator"}, "role-planner": {"t": "Planificateur", "auto": "role", "role": "planner", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-planner"}, "role-researcher": {"t": "Chercheur", "auto": "role", "role": "researcher", "pct": 0, "fait": [], "reste": ["jamais exercé en local: écrire une tâche de référence pour ce rôle"], "note": "aucun essai", "preuves": [], "id": "role-researcher"}, "role-reviewer": {"t": "Revue", "auto": "role", "role": "reviewer", "pct": 67, "fait": ["2/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (2/3 aujourd'hui)"], "note": "2/3 essais", "preuves": [], "id": "role-reviewer"}, "role-spec-writer": {"t": "Agent spec", "auto": "role", "role": "spec-writer", "pct": 100, "fait": ["3/3 essai(s) aux critères verts"], "reste": ["élargir à plus de tâches et à d'autres paliers"], "note": "3/3 essais", "preuves": [], "id": "role-spec-writer"}, "role-test-writer": {"t": "Auteur de tests", "auto": "role", "role": "test-writer", "pct": 62, "fait": ["3/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "0/3 essai(s) aux critères verts", "0/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (13/21 aujourd'hui)"], "note": "13/21 essais", "preuves": [], "id": "role-test-writer"}, "role-worker": {"t": "Worker", "auto": "role", "role": "worker", "pct": 92, "fait": ["3/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "3/3 essai(s) aux critères verts", "2/3 essai(s) aux critères verts"], "reste": ["fiabiliser jusqu'à k essais sur k (33/36 aujourd'hui)"], "note": "33/36 essais", "preuves": [], "id": "role-worker"}, "sprint": {"t": "Contrats de sprint", "pct": 60, "fait": ["sprint-contract@1 pour chaque évaluation ( à )"], "reste": ["contrats négociés entre planificateur et évaluateur"], "preuves": [], "id": "sprint"}, "sre": {"t": "Observateur SRE", "pct": 0, "fait": [], "reste": ["logs, métriques, alertes"], "preuves": [], "id": "sre"}, "tool-a2a": {"t": "A2A", "pct": 40, "fait": ["serveur A2A 1.0 local (fonderie a2a carte|servir): carte des 14 rôles, SendMessage, GetTask et CancelTask jugés par les types du SDK officiel a2a-sdk 1.3.0 (spec 055)", "dispatch réel refusé sans contrat d'autonomie (R7); commandes de la CLI couvertes par des tests d'acceptation (R6)"], "reste": ["pourcentage estimé par l'orchestrateur, sans barème à ancrages (audit R5, D06)", "aucun agent externe ne l'appelle (question 19 du contrat n° 16: non pour l'instant)", "pas de client A2A de Fonderie vers d'autres agents"], "preuves": [], "id": "tool-a2a"}, "tool-acceptance": {"t": "Tests d'acceptation", "pct": 75, "fait": ["écrits rouges par le test-writer, marque pending, lecture seule pour les workers"], "reste": ["contrôle automatique que le worker n'y touche pas, y compris par Bash"], "preuves": [], "id": "tool-acceptance"}, "tool-browser": {"t": "Navigateur", "pct": 5, "fait": ["Playwright MCP configuré"], "reste": ["navigateur installé (Chrome absent)", "évaluation d'interfaces"], "preuves": [], "id": "tool-browser"}, "tool-cicd": {"t": "CI/CD et flags", "pct": 0, "fait": [], "reste": ["CI distante", "canari et rollback"], "preuves": [], "id": "tool-cicd"}, "tool-graph": {"t": "Graphe de code (GitNexus)", "pct": 45, "fait": ["GitNexus installé et indexé: main réindexé au commit, 816 fichiers dont 39 de src et aucun de (1 860 avant),.gitnexusignore effectif", "graphe de code exporté (237 dépendances, 144 communautés) et servi au cockpit; make graph réparé (lecture par fichier)", "main réindexé le 29 octobre (1 512 fichiers) avec,.env et secrets exclus: gitnexus cypher compte 0 fichier de tests cachés indexé contre 47 pour", "GitNexus donné en lecture seule au worker et au planner: trois outils autorisés (query, context, impact), dix retirés, coupable par FONDERIE_SANS=gitnexus (spec 057, essai réel de trois variantes)"], "reste": ["pourcentage estimé par l'orchestrateur, sans barème à ancrages ni scénario de preuve (audit R5, D06); à ancrer ou à faire arbitrer par l'humain", "effet sur le taux de verts non mesuré (à 13 essais par heure un banc ne décide qu'un effet de 20 points ou plus): le lot M1 du contrat n° 17 mesure l'usage avec un seuil écrit d'avance", "la garde de zones ne voit pas les appels MCP: l'index est la seule barrière; explorateur local non branché sur le graphe", "impact avant modification non branché au dispatch"], "preuves": [], "id": "tool-graph"}, "tool-mutation": {"t": "Mutation et SAST", "pct": 41, "fait": ["mutmut 3.8 configuré: de 80 à 88 %, de 85 à 89 % de mutants tués", "de 67 à 84 % de mutants tués (contrat n° 7)", "contrat n° 17 (30 octobre): tests de mutants écrits par des workers locaux, 209 tâches, 189 fusionnées, 90,4 % sans reprise; a2a 63,7 à 95,1 %, bench 42,6 à 90,9 %, puissance 65,2 à 84,1 %, veille 75,7 à 80,3 %, knowledge 86,9 à 92,3 % (Bilans K1 à K5)", "une tâche de worker réussit au premier essai à 10 mutants visés ou moins (28 sur 28) et rarement au-delà de 20; découper une grosse fonction par thème a donné a2a de 79,4 à 95,1 % (make_server, Tasks.send)", "ordonnanceur (runner, scheduler): 81,8 % puis 89,5 %; contrôles remesurés après les ajouts du jour: 79,9 % puis 83,0 %; clone sur ext4: 700 à 800 mutants en une minute", "runner transactionnel: 78 % de mutants tués au premier passage (777 sur 994), 86 % après les tests tirés des survivants (854 sur 994); moins de processus (6 à 12 au lieu de 32) contre un blocage intermittent de mutmut à la génération"], "reste": ["à 70,4 % sous son seuil de 72 % (3413 tués, 1422 survivants, 30 octobre 12:48); contrat n° 18: trois tours de tests (tours 9 à 11), 41 fichiers de tests de mutants inscrits, remesure complète lancée à 22:03", "un lot de tests fusionnés peut polluer les suivants: deux pytest.MonkeyPatch jamais annulés ont fait échouer quatre tests existants, vu par la porte complète (4791 tests verts après correction); fusionner un lot demande la porte complète, pas seulement", "mutation dans la gate, sur chaque module critique", "SAST dans les capteurs"], "preuves": [], "id": "tool-mutation"}, "tool-sandbox": {"t": "Sandbox", "pct": 76, "fait": ["worktree par tâche, config Claude isolée, outils et MCP restreints", "conteneur Podman par run (fonderie dispatch --boite): réseau coupé, relais vers le seul port du serveur de modèles", "boîte mesurée contre l'hôte (F5): mêmes réussites, plus rapide; CLI manquante corrigée (image 0.2)", "montages par construction, critères rejoués dans la boîte, garde stricte, configuration et relais par run (contrat n° 7)", "boîte allégée mesurée sur 96 essais: refus divisés par deux", "boîte allégée en défaut des runs en boîte (contrat n° 8)"], "reste": ["instantanés, microVM"], "preuves": [], "id": "tool-sandbox"}, "tool-search": {"t": "Recherche de code", "pct": 80, "fait": ["Read, Grep, Glob limités au rôle, chemins absolus du worktree"], "reste": ["LSP pour les workers locaux"], "preuves": [], "id": "tool-search"}, "tool-sensors": {"t": "Capteurs rapides", "pct": 52, "fait": ["ruff, mypy, pytest, critères rejoués"], "reste": ["tests choisis par impact"], "preuves": [], "id": "tool-sensors"}, "tool-skills": {"t": "Skills", "pct": 40, "fait": ["six skills du projet, commandes du pipeline"], "reste": ["skills tierces arbitrées", "skills mesurées par ablation"], "preuves": [], "id": "tool-skills"}, "tool-web": {"t": "MCP docs et web", "pct": 10, "fait": ["rôle chercheur défini, zone externe marquée"], "reste": ["chercheur exercé en local", "sources ingérées dans le wiki"], "preuves": [], "id": "tool-web"}, "z-code": {"t": "Code source (Z1)", "pct": 75, "fait": ["écriture par bail, contrôlée par permissions et dispatch"], "reste": ["écritures Bash bloquées avant coup"], "preuves": [], "id": "z-code"}, "z-constitution": {"t": "et politiques (Z0, Z7)", "pct": 50, "fait": ["constitution modifiée par proposition seulement"], "reste": ["fusion des propositions sur dossier de preuves"], "preuves": [], "id": "z-constitution"}, "z-contracts": {"t": "Contrats et schémas", "pct": 92, "fait": ["onze schémas versionnés", "task@2 et son schéma", "task@3 et son schéma"], "reste": ["migration des tâches existantes"], "preuves": [], "id": "z-contracts"}, "z-docs": {"t": "Docs et ADR (Z0)", "pct": 60, "fait": ["docs, ADR, wiki avec journal"], "reste": ["statut et fraîcheur vérifiés (lint du wiki)"], "preuves": [], "id": "z-docs"}, "z-framing": {"t": "Cadrage (Z2)", "pct": 70, "fait": ["validé par dispatch"], "reste": ["niveau 2"], "preuves": [], "id": "z-framing"}, "z-graph": {"t": "Graphe de code (Z1)", "pct": 10, "fait": ["code source zoné Z1"], "reste": ["graphe statique et dynamique"], "preuves": [], "id": "z-graph"}, "z-hidden": {"t": "Tests cachés (Z4)", "pct": 60, "fait": ["refus de lecture en headless, canari non fuité, évaluateur seul lecteur", ".env et secrets exclus de l'index GitNexus que les rôles interrogent: 0 fichier de tests cachés indexé (gitnexus cypher, 29 octobre)"], "reste": ["faille du worktree fermée", "tests cachés hors de git", "et.env.* pas encore exclus de l'index (aucun de ces chemins n'existe aujourd'hui); test de comparaison avec les zones au lot C4 du contrat n° 17"], "preuves": [], "id": "z-hidden"}, "z-journal": {"t": "Journal et relèves (Z5)", "pct": 80, "fait": ["relèves, fiches, résultats d'évaluation"], "reste": ["rotation et résumé automatique du journal"], "preuves": [], "id": "z-journal"}, "z-memory": {"t": "Mémoire épisodique", "pct": 40, "fait": ["fiches d'échec, wiki des modèles locaux"], "reste": ["leçons vérifiées réinjectées automatiquement"], "preuves": [], "id": "z-memory"}, "z-registry": {"t": "Registre (Z6)", "pct": 90, "fait": ["bascule par l'évaluateur seul, liée au rôle de la session, gardée par dispatch", "ajout par fonderie state add, orchestrateur seul"], "reste": ["lien automatique spec, entrée, évaluation"], "preuves": [], "id": "z-registry"}, "z-spec": {"t": "Spec, plan, tâches (Z2)", "pct": 70, "fait": ["spec, plan, tâches task@1 validées"], "reste": ["traçabilité: l'outil existe (fonderie trace, spec 035); reste à en faire un seuil de make check après lecture de sa sortie sur les specs"], "preuves": [], "id": "z-spec"}, "z-tests": {"t": "Tests visibles (Z3)", "pct": 75, "fait": ["lecture seule pour les workers, écrits par le test-writer"], "reste": ["modification par Bash bloquée avant coup"], "preuves": [], "id": "z-tests"}}, "cells": {"planSvg": {"h0": "human", "h1": "human", "h2": "human", "h3": "human", "h4": "gate", "h5": "release", "orch": "role-orchestrator", "rail": "role-orchestrator", "boot0": "boot-cold", "boot1": "boot-cold", "boot2": "tool-graph", "boot3": "boot-warm", "boot4": "boot-handoff", "framer": "role-framer", "explorer": "role-explorer", "research": "role-researcher", "spec": "role-spec-writer", "archi": "role-architect", "planner": "role-planner", "critic": "role-critic", "impact": "impact", "contracts": "sprint", "testw": "role-test-writer", "workers": "role-worker", "integ": "role-integrator", "gateq": "gate", "review": "role-reviewer", "evalqa": "role-evaluator", "antitriche": "antitriche", "detv": "detv", "release": "release", "sre": "sre", "analyst": "role-analyst", "gardener": "role-gardener", "bg": "bg", "t0a": "boot-cold", "t0b": "tool-graph", "t1a": "tool-search", "t1b": "tool-web", "t2a": "tool-skills", "t2b": "tool-acceptance", "t3a": "tool-sandbox", "t3b": "tool-sensors", "t4a": "tool-browser", "t4b": "tool-mutation", "t5a": "tool-cicd", "t5b": "tool-a2a", "z00": "z-graph", "z01": "z-journal", "z10": "z-docs", "z11": "z-framing", "z20": "z-spec", "z21": "z-contracts", "z30": "z-code", "z31": "z-tests", "z40": "z-hidden", "z41": "z-registry", "z50": "z-memory", "z51": "z-constitution", "cockpit": "m13", "o0": "o-traces", "o1": "o-cost", "o2": "o-audit", "o3": "m14", "o4": "m15", "o5": "o-taxonomy"}}, "loops": [], "loopIds": [], "chunks": []}</script>
+<script>
+/* Surcouche de suivi : jauge horizontale dans chaque cellule des schémas du blueprint v3,
+   vue locale au clic. Données : <script id="suivi-data" type="application/json">. Ne dépend que du DOM rendu par le blueprint (g.node[data-id]). */
+(function () {
+  "use strict";
+  const NS = "http://www.w3.org/2000/svg";
+  const P = JSON.parse(document.getElementById("suivi-data").textContent);
+  const C = P.concepts;
+  const SVG_NAMES = {
+    planSvg: "Plan global",
+  };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const level = (p) => (p >= 67 ? "hi" : p >= 34 ? "mid" : "lo");
+
+  function svgName(sid) {
+    if (SVG_NAMES[sid]) return SVG_NAMES[sid];
+    let m = sid.match(/^loop(\d+)$/);
+    if (m) return "Boucle " + (P.loopIds[+m[1]] || "");
+    m = sid.match(/^mini(\d+)$/);
+    if (m) return "Chunk " + String(+m[1] + 1).padStart(2, "0");
+    return sid;
+  }
+  function conceptOf(sid, nid) {
+    if (P.cells[sid]) return P.cells[sid][nid] || null;
+    let m = sid.match(/^loop(\d+)$/);
+    if (m) return P.loops[+m[1]] || null;
+    m = sid.match(/^mini(\d+)$/);
+    if (m) return P.chunks[+m[1]] || null;
+    return null;
+  }
+
+  /* ---------- Jauges dans les cellules ---------- */
+  const byConcept = {};
+  let clipN = 0;
+  function gauge(svg, g, cid) {
+    const c = C[cid];
+    const box = g.querySelector("rect.box");
+    if (!c || !box) return;
+    const x = +box.getAttribute("x"), y = +box.getAttribute("y");
+    const w = +box.getAttribute("width"), h = +box.getAttribute("height");
+    const rx = box.getAttribute("rx") || 8;
+    let defs = svg.querySelector("defs.suivi");
+    if (!defs) { defs = document.createElementNS(NS, "defs"); defs.setAttribute("class", "suivi"); svg.insertBefore(defs, svg.firstChild); }
+    const id = "sv-clip-" + (++clipN);
+    const cp = document.createElementNS(NS, "clipPath"); cp.setAttribute("id", id);
+    const cr = document.createElementNS(NS, "rect");
+    for (const [k, v] of [["x", x], ["y", y], ["width", w], ["height", h], ["rx", rx]]) cr.setAttribute(k, v);
+    cp.appendChild(cr); defs.appendChild(cp);
+    const fill = document.createElementNS(NS, "g");
+    fill.setAttribute("clip-path", "url(#" + id + ")");
+    fill.setAttribute("class", "sv-gauge sv-" + level(c.pct));
+    const r = document.createElementNS(NS, "rect");
+    for (const [k, v] of [["x", x], ["y", y], ["width", (w * c.pct / 100).toFixed(1)], ["height", h], ["class", "sv-fill"]]) r.setAttribute(k, v);
+    const bar = document.createElementNS(NS, "rect");
+    for (const [k, v] of [["x", x], ["y", y + h - 3.5], ["width", (w * c.pct / 100).toFixed(1)], ["height", 3.5], ["class", "sv-bar"]]) bar.setAttribute(k, v);
+    fill.appendChild(r); fill.appendChild(bar);
+    box.after(fill);
+    if (h >= 22 && w >= 54) {
+      const t = document.createElementNS(NS, "text");
+      // Une cellule empilée porte un badge en haut à droite : le pourcentage descend en bas.
+      const low = g.classList.contains("k-stack");
+      t.setAttribute("x", x + w - 5); t.setAttribute("y", low ? y + h - 7 : y + (h >= 40 ? 11 : 9));
+      t.setAttribute("text-anchor", "end"); t.setAttribute("class", "sv-pct sv-" + level(c.pct));
+      t.textContent = c.pct + " %";
+      g.appendChild(t);
+    }
+    g.classList.add("sv-cell", "click");
+    g.dataset.concept = cid;
+    if (!g.hasAttribute("tabindex")) { g.setAttribute("tabindex", "0"); g.setAttribute("role", "button"); }
+    g.setAttribute("aria-label", (g.getAttribute("aria-label") || c.t) + " · " + c.pct + " %");
+    g.addEventListener("click", () => openLocal(cid));
+    g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openLocal(cid); } });
+    (byConcept[cid] = byConcept[cid] || []).push({ g: g, sid: svg.id });
+  }
+  document.querySelectorAll("svg.dg").forEach((svg) => {
+    svg.querySelectorAll("g.node[data-id]").forEach((g) => {
+      const cid = conceptOf(svg.id, g.dataset.id);
+      if (cid) gauge(svg, g, cid);
+    });
+  });
+
+  /* ---------- Vue locale ---------- */
+  const panel = document.getElementById("svLocal");
+  const body = document.getElementById("svLocalBody");
+  let opened = null, lastFocus = null;
+  function list(items, cls) {
+    if (!items || !items.length) return '<p class="sv-none">Rien pour l’instant.</p>';
+    return '<ul class="' + cls + '">' + items.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>";
+  }
+  function openLocal(cid) {
+    const c = C[cid];
+    if (!c) return;
+    lastFocus = document.activeElement;
+    document.querySelectorAll(".sv-on").forEach((e) => e.classList.remove("sv-on"));
+    const cells = byConcept[cid] || [];
+    cells.forEach((x) => x.g.classList.add("sv-on"));
+    const where = {};
+    cells.forEach((x) => { where[x.sid] = (where[x.sid] || 0) + 1; });
+    const links = Object.keys(where).map((sid) =>
+      '<button type="button" class="sv-link" data-sid="' + sid + '">' + esc(svgName(sid)) + " · " + where[sid] + " cellule" + (where[sid] > 1 ? "s" : "") + "</button>").join("");
+    body.innerHTML =
+      '<div class="k">Vue locale' + (c.auto ? " · mesurée sur le dépôt" : " · évaluée") + "</div>" +
+      '<h3 class="sv-title">' + esc(c.t) + "</h3>" +
+      '<div class="sv-big sv-' + level(c.pct) + '"><div class="sv-track"><i style="width:' + c.pct + '%"></i></div><b>' + c.pct + " %</b></div>" +
+      '<p class="sv-target">de la cible : ' + esc(P.target) + "</p>" +
+      '<h4 class="sv-h done">Fait</h4>' + list(c.fait, "sv-done") +
+      '<h4 class="sv-h todo">Reste à faire</h4>' + list(c.reste, "sv-todo") +
+      (c.preuves && c.preuves.length ? '<h4 class="sv-h">Preuves dans le dépôt</h4><ul class="sv-proof">' + c.preuves.map((x) => "<li><code>" + esc(x) + "</code></li>").join("") + "</ul>" : "") +
+      (links ? '<h4 class="sv-h">Cellules rattachées</h4><div class="sv-links">' + links + "</div>" : "");
+    panel.hidden = false;
+    panel.classList.add("open");
+    opened = cid;
+    history.replaceState(null, "", "#vue=" + cid);
+    document.getElementById("svClose").focus();
+  }
+  function closeLocal() {
+    panel.classList.remove("open");
+    panel.hidden = true;
+    document.querySelectorAll(".sv-on").forEach((e) => e.classList.remove("sv-on"));
+    opened = null;
+    history.replaceState(null, "", location.pathname);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.getElementById("svClose").addEventListener("click", closeLocal);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && opened) closeLocal(); });
+  body.addEventListener("click", (ev) => {
+    const b = ev.target.closest(".sv-link");
+    if (!b) return;
+    const svg = document.getElementById(b.dataset.sid);
+    if (svg) svg.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  /* Lien direct vers une vue locale : #vue=<concept> */
+  const deep = location.hash.match(/^#vue=([\w-]+)$/);
+  if (deep && C[deep[1]]) openLocal(deep[1]);
+})();
+</script>
+</body></html>
